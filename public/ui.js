@@ -185,6 +185,7 @@ export function renderHabits() {
   // Обработчики для чекбоксов
   document.querySelectorAll(".habit-check").forEach(el => {
     el.addEventListener("click", (e) => {
+      e.stopPropagation(); // Не открывать модал статистики при клике на чек
       const habitId = parseInt(e.target.dataset.habit);
       const date = e.target.dataset.date;
       const index = parseInt(e.target.dataset.index);

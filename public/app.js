@@ -7,7 +7,7 @@ export function initApp() {
 
   // Проверка админа (условная)
   const initData = Telegram.WebApp.initDataUnsafe;
-  const isAdmin = initData.user?.id === parseInt(process.env.ADMIN_USER_ID || "0"); // ← В Vercel
+  const isAdmin = initData?.user?.id === parseInt(process.env.ADMIN_USER_ID || "0"); // ← В Vercel
   if (isAdmin) {
     const title = document.getElementById("app-title");
     title.insertAdjacentHTML("afterend", `<button id="admin-btn">Admin</button>`);

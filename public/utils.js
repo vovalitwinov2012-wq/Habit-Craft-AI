@@ -1,7 +1,7 @@
 // Telegram WebApp Init Data для синхронизации
 export function getTelegramUserId() {
   const initData = Telegram.WebApp.initDataUnsafe;
-  return initData.user?.id || null;
+  return initData?.user?.id || null;
 }
 
 export function saveData(key, value) {
