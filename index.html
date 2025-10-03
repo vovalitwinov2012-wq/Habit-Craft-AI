@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HabitCraft</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="app">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="app-title" data-i18n="appTitle">HabitCraft</h1>
+            <div class="header-controls">
+                <button class="icon-btn" id="lang-switch" data-i18n="language">EN</button>
+                <button class="icon-btn" id="add-habit-btn">+</button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content" id="main-content">
+            <div class="habits-list" id="habits-list">
+                <!-- Habits will be rendered here -->
+            </div>
+            
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state" style="display: none;">
+                <div class="empty-icon">📊</div>
+                <h3 data-i18n="emptyTitle">No habits yet</h3>
+                <p data-i18n="emptySubtitle">Create your first habit to start tracking</p>
+                <button class="btn-primary" id="first-habit-btn" data-i18n="createFirstHabit">Create Habit</button>
+            </div>
+        </main>
+
+        <!-- AI Coach Section -->
+        <section class="ai-section" id="ai-section">
+            <h3 data-i18n="aiCoach">AI Coach</h3>
+            <div class="ai-input-group">
+                <input type="text" id="ai-input" placeholder="Ask for advice..." data-i18n-ph="aiPlaceholder">
+                <button class="btn-secondary" id="ai-send-btn" data-i18n="ask">Ask</button>
+            </div>
+            <div class="ai-response" id="ai-response"></div>
+        </section>
+
+        <!-- Add Habit Modal -->
+        <div class="modal-overlay" id="modal-overlay" style="display: none;">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3 data-i18n="addHabit">Add Habit</h3>
+                    <button class="close-btn" id="close-modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label data-i18n="habitName">Habit Name</label>
+                        <input type="text" id="habit-name" placeholder="e.g., Morning Exercise" data-i18n-ph="habitNamePlaceholder">
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="motivation">Motivation</label>
+                        <textarea id="habit-motivation" placeholder="Why is this habit important?" data-i18n-ph="motivationPlaceholder"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label data-i18n="color">Color</label>
+                        <div class="color-picker">
+                            <div class="color-option selected" data-color="#4CAF50"></div>
+                            <div class="color-option" data-color="#2196F3"></div>
+                            <div class="color-option" data-color="#FF9800"></div>
+                            <div class="color-option" data-color="#9C27B0"></div>
+                            <div class="color-option" data-color="#F44336"></div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="habit-ai-generate">
+                            <span data-i18n="generateWithAI">Generate with AI</span>
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" id="cancel-habit" data-i18n="cancel">Cancel</button>
+                    <button class="btn-primary" id="save-habit" data-i18n="save">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Modal -->
+        <div class="modal-overlay" id="stats-modal" style="display: none;">
+            <div class="modal stats-modal">
+                <div class="modal-header">
+                    <h3 id="stats-title">Habit Statistics</h3>
+                    <button class="close-btn" id="close-stats">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="calendar" id="habit-calendar"></div>
+                    <div class="stats-info">
+                        <div class="stat-item">
+                            <span data-i18n="currentStreak">Current Streak</span>
+                            <strong id="current-streak">0 days</strong>
+                        </div>
+                        <div class="stat-item">
+                            <span data-i18n="completionRate">Completion Rate</span>
+                            <strong id="completion-rate">0%</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="config.js"></script>
+    <script src="utils.js"></script>
+    <script src="habit-manager.js"></script>
+    <script src="ai-coach.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
