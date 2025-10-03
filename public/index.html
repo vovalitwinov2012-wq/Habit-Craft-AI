@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HabitCraft</title>
+  <link rel="stylesheet" href="styles/main.css">
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+  <div id="app">
+    <!-- Tab Bar -->
+    <nav class="tab-bar">
+      <button id="tab-today" class="tab-btn active">Сегодня</button>
+      <button id="tab-habits" class="tab-btn">Привычки</button>
+      <button id="tab-stats" class="tab-btn">Статистика</button>
+      <button id="tab-profile" class="tab-btn">Профиль</button>
+    </nav>
+
+    <!-- Content -->
+    <main id="main-content">
+      <!-- Tab "Сегодня" -->
+      <div id="tab-today-content" class="tab-content active">
+        <h2 id="today-title">Сегодня</h2>
+        <div id="ai-advice" class="advice-box">
+          <!-- AI-совет будет сюда -->
+        </div>
+        <div id="today-habits">
+          <!-- Привычки дня -->
+        </div>
+        <button id="add-habit-btn" class="btn-primary">+ Добавить привычку</button>
+      </div>
+
+      <!-- Tab "Привычки" -->
+      <div id="tab-habits-content" class="tab-content">
+        <h2>Мои привычки</h2>
+        <div id="all-habits-list">
+          <!-- Список привычек -->
+        </div>
+      </div>
+
+      <!-- Tab "Статистика" -->
+      <div id="tab-stats-content" class="tab-content">
+        <h2>Статистика</h2>
+        <div id="stats-content">
+          <!-- Графики и статистика -->
+          <div id="calendar-view"></div> <!-- Контейнер для календаря -->
+        </div>
+      </div>
+
+      <!-- Tab "Профиль" -->
+      <div id="tab-profile-content" class="tab-content">
+        <h2>Профиль</h2>
+        <div class="lang-switch">
+          <span id="lang-ru" class="lang-btn active">RU</span>
+          <span id="lang-en" class="lang-btn">EN</span>
+        </div>
+        <button id="premium-upgrade" class="btn-upgrade">Премиум</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="main.js" type="module"></script>
+</body>
+</html>
