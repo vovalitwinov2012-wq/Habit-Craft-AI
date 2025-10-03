@@ -2,71 +2,53 @@ import { loadData, saveData, getTodayKey } from "./utils.js";
 import { t } from "./i18n.js";
 
 let habits = loadData("habits") || [];
-const todayKey = getTodayKey();
-let todayProgress = loadData(`progress-${todayKey}`) || {};
 
-export function addHabit(name) {
+export function addHabit(habitData) {
   const newHabit = {
     id: Date.now(),
-    name,
+    name: habitData.name,
+    motivation: habitData.motivation,
+    repeat: habitData.repeat,
+    customFrequency: habitData.customFrequency,
+    color: habitData.color,
+    reminder: habitData.reminder,
+    reminderTime: habitData.reminderTime,
+    progress: {}, // { date: [0,1,1,0,1] }
     streak: 0,
-    completed: 0,
     total: 0,
     lastCompleted: null,
   };
   habits.push(newHabit);
   saveData("habits", habits);
-  renderTodayHabits();
 }
 
-export function toggleHabit(id) {
-  const habit = habits.find(h => h.id === id);
+export function updateHabitProgress(habitId, date, dayIndex, completed) {
+  const habit = habits.find(h => h.id === habitId);
   if (!habit) return;
 
-  const todayKey = getTodayKey();
-  todayProgress = loadData(`progress-${todayKey}`) || {};
-
-  if (todayProgress[id]) {
-    delete todayProgress[id];
-    habit.completed = Math.max(0, habit.completed - 1);
-  } else {
-    todayProgress[id] = true;
-    habit.completed = habit.completed + 1;
-    habit.total = habit.total + 1;
-
-    if (habit.lastCompleted === todayKey) {
-      // уже сегодня отмечено
-    } else {
-      habit.lastCompleted = todayKey;
-      habit.streak = habit.streak + 1;
-    }
+  if (!habit.progress[date]) {
+    habit.progress[date] = [0, 0, 0, 0, 0]; // 5 дней
   }
+  habit.progress[date][dayIndex] = completed ? 1 : 0;
 
-  saveData(`progress-${todayKey}`, todayProgress);
   saveData("habits", habits);
-  renderTodayHabits();
 }
 
-export function renderTodayHabits() {
-  const container = document.getElementById("today-habits");
-  container.innerHTML = "";
+export function getHabits() {
+  return habits;
+}
 
-  habits.forEach(habit => {
-    const isCompleted = !!todayProgress[habit.id];
-    const streak = habit.streak;
-    const progress = habit.total > 0 ? Math.round((habit.completed / habit.total) * 100) : 0;
+export function deleteHabit(id) {
+  habits = habits.filter(h => h.id !== id);
+  saveData("habits", habits);
+}
 
-    const card = document.createElement("div");
-    card.className = "habit-card";
-    card.innerHTML = `
-      <div>
-        <h3>${habit.name}</h3>
-        <p>${t("streak")}${streak} | ${t("progress")}${progress}%</p>
-      </div>
-      <button class="btn-check" onclick="window.habit.toggleHabit(${habit.id})">
-        ${isCompleted ? "✓" : "○"}
-      </button>
-    `;
-    container.appendChild(card);
-  });
+export function resetHabitProgress(id) {
+  const habit = habits.find(h => h.id === id);
+  if (habit) {
+    habit.progress = {};
+    habit.streak = 0;
+    habit.total = 0;
+    saveData("habits", habits);
+  }
 }

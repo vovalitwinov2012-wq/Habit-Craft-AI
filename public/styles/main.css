@@ -9,80 +9,47 @@
   --warning: #fbbf24;
   --error: #f87171;
   --muted: #94a3b8;
+  --yellow: #fde047;
+  --purple: #c084fc;
+  --cyan: #67e8f9;
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 body {
   margin: 0;
-  font-family: system-ui, sans-serif;
+  font-family: var(--font-family);
   background-color: var(--bg);
   color: var(--text);
-  padding-bottom: 60px; /* Чтобы не перекрывалось табами */
+  padding-top: 60px;
+  padding-bottom: 20px;
   box-sizing: border-box;
 }
 
 #app {
   max-width: 600px;
   margin: 0 auto;
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
 }
 
-.tab-bar {
+.app-header {
   position: fixed;
-  bottom: 0;
+  top: 0;
   width: 100%;
-  display: flex;
+  max-width: 600px;
   background: white;
-  border-top: 1px solid var(--border);
-  padding: 0.5rem 0;
-  z-index: 100;
-}
-
-.tab-btn {
-  flex: 1;
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  cursor: pointer;
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.tab-btn.active {
-  color: var(--primary);
-}
-
-.tab-content {
-  display: none;
   padding: 1rem;
-  flex: 1;
-  overflow-y: auto;
-  margin-bottom: 60px; /* Компенсация высоты табов */
-}
-
-.tab-content.active {
-  display: block;
-}
-
-.habit-card {
-  background: var(--card-bg);
-  padding: 1rem;
-  margin: 0.5rem 0;
-  border-radius: 8px;
-  box-shadow: var(--shadow);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  animation: fadeIn 0.2s ease-out;
+  box-shadow: var(--shadow);
+  z-index: 100;
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+.header-actions {
+  display: flex;
+  gap: 0.5rem;
 }
 
-.btn-check {
+.btn-add {
   background: var(--primary);
   color: white;
   border: none;
@@ -90,95 +57,181 @@ body {
   height: 32px;
   border-radius: 50%;
   cursor: pointer;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
 }
 
-.advice-box {
-  background-color: #e0e7ff;
-  padding: 1rem;
+.btn-lang {
+  background: none;
+  border: 1px solid var(--border);
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.habit-card {
+  background: var(--card-bg);
+  margin: 0.75rem 0;
   border-radius: 8px;
-  margin: 1rem 0;
-  font-style: italic;
-  font-size: 0.9rem;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.habit-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.habit-name {
+  font-weight: bold;
+}
+
+.habit-progress-bar {
+  height: 8px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.habit-progress-fill {
+  height: 100%;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.habit-dates {
+  display: flex;
+  justify-content: space-around;
+  padding: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.habit-date {
+  text-align: center;
+}
+
+.habit-check {
+  width: 24px;
+  height: 24px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.habit-check.checked {
+  background: var(--success);
+  color: white;
+}
+
+#ai-coach-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+}
+
+#ai-input {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+  min-height: 60px;
+}
+
+#ai-submit {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  cursor: pointer;
+}
+
+#ai-response {
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: #f1f5f9;
+  border-radius: 4px;
+  white-space: pre-wrap;
+}
+
+/* --- Modal Styles --- */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  width: 90%;
+  max-width: 500px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.modal-body {
+  padding: 1rem;
+}
+
+.modal-footer {
+  padding: 1rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
 }
 
 .btn-primary {
   background: var(--primary);
   color: white;
   border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 8px;
-  width: 100%;
-  cursor: pointer;
-  font-size: 1rem;
-}
-
-.btn-upgrade {
-  background: linear-gradient(90deg, #f97316, #f59e0b);
-  color: white;
-  border: none;
-  padding: 0.75rem;
-  border-radius: 8px;
-  width: 100%;
-  margin-top: 1rem;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.lang-switch {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.lang-btn {
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
+  padding: 0.5rem 1rem;
   border-radius: 4px;
-  border: 1px solid var(--border);
+  cursor: pointer;
 }
 
-.lang-btn.active {
-  background-color: var(--primary);
-  color: white;
+/* --- Admin Panel --- */
+.admin-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: white;
+  z-index: 2000;
+  padding: 1rem;
+  overflow-y: auto;
 }
-
-/* --- Calendar Styles --- */
-.calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
-  margin-top: 1rem;
-}
-
-.calendar-day-header {
-  text-align: center;
-  font-size: 0.75rem;
-  color: var(--muted);
-  padding: 0.25rem;
-  font-weight: bold;
-}
-
-.calendar-day {
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.75rem;
-  border-radius: 4px;
-  background-color: #e2e8f0;
-  cursor: default;
-  color: white;
-  font-weight: bold;
-}
-
-.calendar-day.empty {
-  background: none;
-  cursor: default;
-  visibility: hidden; /* Скрывает пустые дни, чтобы сетка была ровной */
-}
-
-/* --- End Calendar Styles --- */

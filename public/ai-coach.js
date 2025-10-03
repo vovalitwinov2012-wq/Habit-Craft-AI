@@ -1,28 +1,11 @@
-import { loadData } from "./utils.js";
 import { t } from "./i18n.js";
+import { loadData, saveData } from "./utils.js";
 
-let adviceCount = parseInt(localStorage.getItem("advice-count") || "0");
-const isPremium = localStorage.getItem("is-premium") === "true";
-
-export async function getAICoachAdvice() {
-  if (!isPremium && adviceCount >= 1) {
-    document.getElementById("ai-advice").textContent = "Достигнут лимит бесплатных советов. Подпишитесь на премиум!";
-    document.getElementById("premium-upgrade").style.display = "block";
-    return;
-  }
-
-  const habits = loadData("habits") || [];
-  const todayKey = new Date().toISOString().split("T")[0];
-  const todayProgress = loadData(`progress-${todayKey}`) || {};
-
-  const completed = habits.filter(h => todayProgress[h.id]).length;
-  const total = habits.length;
-
+export async function getAICoachAdvice(content) {
   const prompt = `
-Ты — дружелюбный AI-коуч по привычкам. Пользователь выполнил ${completed} из ${total} привычек за сегодня.
+Ты — дружелюбный AI-коуч по привычкам. Пользователь написал: "${content}".
 Дай краткий, тёплый и мотивирующий совет на ${localStorage.getItem("lang") === "ru" ? "русском" : "английском"}.
-Не упоминай, что ты ИИ.
-Если всё хорошо — похвали. Если есть пробелы — предложи микро-действие.
+Если пользователь описал привычку, предложи, как её отследить: например, "Выпивай 2 стакана воды в день" → "Трекер: 2 раза в день отметь выполнение".
 `;
 
   try {
@@ -35,22 +18,51 @@ export async function getAICoachAdvice() {
         "X-Title": process.env.SITE_NAME
       },
       body: JSON.stringify({
-        model: "qwen/qwen3-235b-a22b:free",
+        model: "qwen/qwen3-coder:free",
         messages: [{ role: "user", content: prompt }]
       })
     });
 
     const data = await response.json();
-    const advice = data.choices[0].message.content;
-
-    document.getElementById("ai-advice").textContent = advice;
-
-    if (!isPremium) {
-      adviceCount++;
-      localStorage.setItem("advice-count", adviceCount);
-    }
+    return data.choices[0].message.content;
   } catch (e) {
     console.error("AI Error:", e);
-    document.getElementById("ai-advice").textContent = "Ошибка получения совета. Попробуйте позже.";
+    return "Ошибка получения совета. Попробуйте позже.";
+  }
+}
+
+export async function generateHabitTrackerFromAI(description) {
+  const prompt = `
+Пользователь описал привычку: "${description}".
+Сгенерируй JSON с параметрами для трекера привычки:
+{
+  "name": "название",
+  "motivation": "мотивация",
+  "repeat": "daily/weekly/custom",
+  "customFrequency": {"times": 1, "days": 7} // если custom
+}
+`;
+
+  try {
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.SITE_URL,
+        "X-Title": process.env.SITE_NAME
+      },
+      body: JSON.stringify({
+        model: "qwen/qwen3-coder:free",
+        messages: [{ role: "user", content: prompt }],
+        response_format: { type: "json_object" }
+      })
+    });
+
+    const data = await response.json();
+    return JSON.parse(data.choices[0].message.content);
+  } catch (e) {
+    console.error("AI Tracker Gen Error:", e);
+    return null;
   }
 }
