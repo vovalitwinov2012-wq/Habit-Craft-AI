@@ -1,12 +1,9 @@
 {
   "version": 2,
-  "builds": [
-    { "src": "index.html", "use": "@vercel/static" },
-    { "src": "styles.css", "use": "@vercel/static" },
-    { "src": "app.js", "use": "@vercel/static" }
-  ],
+  "buildCommand": "",
+  "outputDirectory": ".",
   "routes": [
-    { "src": "/(.*\\.(js|css|png|jpg|svg|ico))", "dest": "/$1" },
-    { "src": "/(.*)", "dest": "/index.html" }
+    { "src": "/(.*\.(js|css|html|png|jpg|svg))", "continue": true },
+    { "src": "/", "dest": "/index.html" }
   ]
 }
