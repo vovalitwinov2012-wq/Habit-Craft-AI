@@ -1,4 +1,4 @@
-// Advanced Habit Management System
+// Habit Management System
 class HabitManager {
     constructor() {
         this.storage = new StorageManager();
@@ -7,7 +7,15 @@ class HabitManager {
     }
 
     loadHabits() {
-        return this.storage.getItem(CONFIG.STORAGE_KEYS.HABITS) || [];
+        const habits = this.storage.getItem(CONFIG.STORAGE_KEYS.HABITS) || [];
+        // Initialize missing properties for existing habits
+        habits.forEach(habit => {
+            if (!habit.completedDates) habit.completedDates = [];
+            if (!habit.streak) habit.streak = 0;
+            if (!habit.totalCompletions) habit.totalCompletions = 0;
+            if (!habit.isActive) habit.isActive = true;
+        });
+        return habits;
     }
 
     saveHabits() {
@@ -15,19 +23,13 @@ class HabitManager {
     }
 
     canCreateHabit() {
-        const isPremium = this.isPremium();
         const currentCount = this.habits.length;
-        
-        if (isPremium) {
-            return currentCount < CONFIG.MAX_PREMIUM_HABITS;
-        } else {
-            return currentCount < CONFIG.MAX_FREE_HABITS;
-        }
+        return currentCount < CONFIG.MAX_FREE_HABITS;
     }
 
     createHabit(habitData) {
         if (!this.canCreateHabit()) {
-            throw new Error('Habit limit reached. Upgrade to premium for more habits.');
+            throw new Error(`Лимит привычек достигнут. Максимум ${CONFIG.MAX_FREE_HABITS} привычек в бесплатной версии.`);
         }
 
         const habit = {
@@ -99,7 +101,7 @@ class HabitManager {
             newStreak: habit.streak
         });
 
-        return completedIndex === -1; // Returns true if completed, false if uncompleted
+        return completedIndex === -1;
     }
 
     updateStreak(habit) {
@@ -107,7 +109,7 @@ class HabitManager {
         let currentStreak = 0;
         
         // Check backwards from today
-        for (let i = 0; i < 365; i++) { // Check up to a year
+        for (let i = 0; i < 365; i++) {
             const checkDate = new Date(today);
             checkDate.setDate(today.getDate() - i);
             const dateKey = this.getDateKey(checkDate);
@@ -131,19 +133,19 @@ class HabitManager {
     }
 
     getTodayHabits() {
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        
         return this.habits.filter(habit => {
             if (!habit.isActive) return false;
-            
-            const today = new Date();
-            const dayOfWeek = today.getDay(); // 0 = Sunday, 6 = Saturday
             
             switch (habit.frequency) {
                 case 'daily':
                     return true;
                 case 'weekdays':
-                    return dayOfWeek >= 1 && dayOfWeek <= 5; // Mon-Fri
+                    return dayOfWeek >= 1 && dayOfWeek <= 5;
                 case 'weekly':
-                    return dayOfWeek === 0 || dayOfWeek === 6; // Sat-Sun
+                    return dayOfWeek === 0 || dayOfWeek === 6;
                 default:
                     return true;
             }
@@ -176,7 +178,8 @@ class HabitManager {
 
         this.habits.forEach(habit => {
             totalCompletions += habit.totalCompletions;
-            totalPossibleCompletions += Math.ceil((new Date() - new Date(habit.createdAt)) / (1000 * 60 * 60 * 24));
+            const habitDays = Math.ceil((new Date() - new Date(habit.createdAt)) / (1000 * 60 * 60 * 24));
+            totalPossibleCompletions += habitDays;
             longestStreak = Math.max(longestStreak, habit.streak);
         });
 
@@ -194,19 +197,13 @@ class HabitManager {
     }
 
     getDateKey(date) {
-        return date.toISOString().split('T')[0]; // YYYY-MM-DD
+        return date.toISOString().split('T')[0];
     }
 
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
     }
 
-    isPremium() {
-        // TODO: Integrate with payment system
-        return false;
-    }
-
-    // Advanced analytics methods
     getHabitCompletionCalendar(habitId, days = 30) {
         const habit = this.habits.find(h => h.id === habitId);
         if (!habit) return [];
@@ -227,26 +224,6 @@ class HabitManager {
         }
 
         return calendar;
-    }
-
-    // Export data for backup
-    exportData() {
-        return {
-            habits: this.habits,
-            exportDate: new Date().toISOString(),
-            version: CONFIG.VERSION
-        };
-    }
-
-    // Import data from backup
-    importData(data) {
-        if (data.version !== CONFIG.VERSION) {
-            console.warn('Importing data from different version');
-        }
-
-        this.habits = data.habits || [];
-        this.saveHabits();
-        return true;
     }
 }
 

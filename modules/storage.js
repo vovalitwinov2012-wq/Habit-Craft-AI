@@ -1,4 +1,4 @@
-// Enhanced Storage Manager with error handling and fallbacks
+// Enhanced Storage Manager
 class StorageManager {
     constructor() {
         this.userId = this.getUserId();
@@ -6,10 +6,10 @@ class StorageManager {
     }
 
     getUserId() {
-        if (this.isTelegram) {
-            return Telegram.WebApp.initDataUnsafe?.user?.id?.toString() || 'telegram-user';
+        if (this.isTelegram && Telegram.WebApp.initDataUnsafe?.user?.id) {
+            return 'tg-' + Telegram.WebApp.initDataUnsafe.user.id.toString();
         }
-        return 'local-user-' + Math.random().toString(36).substr(2, 9);
+        return 'local-' + Math.random().toString(36).substr(2, 9);
     }
 
     getStorageKey(key) {
@@ -40,24 +40,11 @@ class StorageManager {
             if (!data) return null;
 
             const parsed = JSON.parse(data);
-            
-            // Check if data is from current version
-            if (parsed.version !== CONFIG.VERSION) {
-                this.migrateData(key, parsed);
-                return null;
-            }
-
             return parsed.value;
         } catch (error) {
             console.error('Storage get error:', error);
             return null;
         }
-    }
-
-    migrateData(key, oldData) {
-        console.log(`Migrating data for key: ${key}`);
-        // Implement data migration logic here if needed
-        this.setItem(key, oldData.value);
     }
 
     removeItem(key) {
@@ -88,32 +75,6 @@ class StorageManager {
             return false;
         }
     }
-
-    getStorageInfo() {
-        let totalSize = 0;
-        let userKeys = 0;
-
-        try {
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                const value = localStorage.getItem(key);
-                totalSize += key.length + (value ? value.length : 0);
-                
-                if (key.includes(this.userId)) {
-                    userKeys++;
-                }
-            }
-        } catch (error) {
-            console.error('Storage info error:', error);
-        }
-
-        return {
-            totalSize: (totalSize / 1024).toFixed(2) + ' KB',
-            userKeys,
-            quota: '5MB' // Standard localStorage quota
-        };
-    }
 }
 
-// Create global instance
 window.StorageManager = StorageManager;

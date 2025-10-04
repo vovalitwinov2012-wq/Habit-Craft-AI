@@ -5,18 +5,18 @@ const CONFIG = {
     VERSION: '1.0.0',
     
     // Habit Limits
-    MAX_FREE_HABITS: 5,
+    MAX_FREE_HABITS: 10,
     MAX_PREMIUM_HABITS: 50,
     
     // AI Settings
-    AI_REQUESTS_PER_DAY: 5, // Увеличил лимит для тестирования
+    AI_REQUESTS_PER_DAY: 5,
     AI_MODEL: "deepseek/deepseek-chat-v3.1:free",
     AI_API_URL: "https://openrouter.ai/api/v1/chat/completions",
     
     // Feature Flags
     ENABLE_AI: true,
     ENABLE_ANALYTICS: true,
-    ENABLE_PREMIUM: false, // Will be enabled when payments are integrated
+    ENABLE_PREMIUM: false,
     
     // UI Settings
     DEFAULT_THEME: 'light',
@@ -31,7 +31,7 @@ const CONFIG = {
     }
 };
 
-// Export for use in modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = CONFIG;
-}
+// Initialize global APP_CONFIG for API keys
+window.APP_CONFIG = window.APP_CONFIG || {
+    OPENROUTER_API_KEY: null
+};

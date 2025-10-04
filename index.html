@@ -15,9 +15,6 @@
             <div class="header-content">
                 <h1 class="app-title">HabitCraft AI</h1>
                 <div class="header-controls">
-                    <button class="icon-btn premium-badge" id="premium-btn" title="Premium">
-                        <span>✨</span>
-                    </button>
                     <button class="icon-btn" id="theme-toggle" title="Сменить тему">
                         <span class="theme-icon">🌙</span>
                     </button>
@@ -35,7 +32,7 @@
         </header>
 
         <!-- Main Content -->
-        <main class="main-content">
+        <main class="main-content" id="main-content">
             <!-- Today's Habits -->
             <section class="section today-section">
                 <div class="section-header">
@@ -51,7 +48,7 @@
             <section class="section ai-section">
                 <div class="section-header">
                     <h2>AI Коуч</h2>
-                    <div class="ai-credits" id="ai-credits">3 запроса осталось</div>
+                    <div class="ai-credits" id="ai-credits">5 запросов осталось</div>
                 </div>
                 <div class="ai-input-container">
                     <input 
@@ -121,11 +118,11 @@
                             <div class="form-group">
                                 <label>Цвет</label>
                                 <div class="color-picker">
-                                    <div class="color-option selected" data-color="#4CAF50" style="background-color: #4CAF50;"></div>
-                                    <div class="color-option" data-color="#2196F3" style="background-color: #2196F3;"></div>
-                                    <div class="color-option" data-color="#FF9800" style="background-color: #FF9800;"></div>
-                                    <div class="color-option" data-color="#9C27B0" style="background-color: #9C27B0;"></div>
-                                    <div class="color-option" data-color="#F44336" style="background-color: #F44336;"></div>
+                                    <div class="color-option selected" data-color="#4CAF50"></div>
+                                    <div class="color-option" data-color="#2196F3"></div>
+                                    <div class="color-option" data-color="#FF9800"></div>
+                                    <div class="color-option" data-color="#9C27B0"></div>
+                                    <div class="color-option" data-color="#F44336"></div>
                                 </div>
                             </div>
                             <div class="form-group">
@@ -206,7 +203,6 @@
     <script src="modules/storage.js"></script>
     <script src="modules/habit-manager.js"></script>
     <script src="modules/ai-coach.js"></script>
-    <script src="modules/analytics.js"></script>
     <script src="modules/ui-engine.js"></script>
     <script src="app.js"></script>
 </body>

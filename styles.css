@@ -127,11 +127,6 @@ body {
     transform: translateY(-1px);
 }
 
-.premium-badge {
-    background: linear-gradient(135deg, #FFD700, #FFA500);
-    color: #7C2D12;
-}
-
 .daily-progress {
     display: flex;
     align-items: center;
@@ -886,4 +881,27 @@ body {
 
 .habit-card.completed {
     animation: celebrate 0.6s ease;
+}
+
+/* Additional animations */
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(100%);
+        opacity: 0;
+    }
 }

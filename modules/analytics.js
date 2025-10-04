@@ -1,4 +1,4 @@
-// Analytics and Tracking System
+// Analytics System
 class Analytics {
     constructor() {
         this.storage = new StorageManager();
@@ -19,60 +19,18 @@ class Analytics {
             properties: properties,
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent,
-            language: navigator.language,
-            platform: navigator.platform
+            language: navigator.language
         };
 
         this.events.push(event);
         
-        // Keep only last 1000 events to prevent storage overflow
         if (this.events.length > 1000) {
             this.events = this.events.slice(-1000);
         }
         
         this.saveEvents();
-        
-        // Log to console in development
-        if (window.location.hostname === 'localhost') {
-            console.log('Analytics Event:', event);
-        }
     }
 
-    getStats(timeframe = '30d') {
-        const now = new Date();
-        let startDate;
-
-        switch (timeframe) {
-            case '7d':
-                startDate = new Date(now.setDate(now.getDate() - 7));
-                break;
-            case '30d':
-                startDate = new Date(now.setDate(now.getDate() - 30));
-                break;
-            case '90d':
-                startDate = new Date(now.setDate(now.getDate() - 90));
-                break;
-            default:
-                startDate = new Date(0); // All time
-        }
-
-        const filteredEvents = this.events.filter(event => 
-            new Date(event.timestamp) >= startDate
-        );
-
-        const eventCounts = {};
-        filteredEvents.forEach(event => {
-            eventCounts[event.name] = (eventCounts[event.name] || 0) + 1;
-        });
-
-        return {
-            totalEvents: filteredEvents.length,
-            eventCounts,
-            timeframe
-        };
-    }
-
-    // Common event tracking methods
     trackAppLaunch() {
         this.track('app_launch');
     }
@@ -95,26 +53,6 @@ class Analytics {
 
     trackThemeChange(theme) {
         this.track('theme_changed', { theme });
-    }
-
-    trackError(error, context = {}) {
-        this.track('error_occurred', { error: error.message, ...context });
-    }
-
-    // Export analytics data
-    exportData() {
-        return {
-            events: this.events,
-            exportDate: new Date().toISOString(),
-            totalEvents: this.events.length
-        };
-    }
-
-    // Clear analytics data
-    clearData() {
-        this.events = [];
-        this.saveEvents();
-        return true;
     }
 }
 
