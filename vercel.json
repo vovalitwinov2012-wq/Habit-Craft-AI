@@ -4,22 +4,6 @@
     {
       "src": "api/ai.js",
       "use": "@vercel/node@3.0.0"
-    },
-    {
-      "src": "index.html",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "app.js",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "styles.css",
-      "use": "@vercel/static"
-    },
-    {
-      "src": "modules/(.*)",
-      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -28,7 +12,7 @@
       "dest": "/api/ai.js"
     },
     {
-      "src": "/(.*\\.(?:js|css|png|jpg|jpeg|svg|ico))",
+      "src": "/(.*\\.(?:js|css|map|png|jpg|jpeg|svg|ico))",
       "dest": "/$1"
     },
     {

@@ -6,6 +6,6 @@
     "node": "18.x"
   },
   "scripts": {
-    "start": "echo \"Static site - no build step\""
+    "start": "echo \"Static site - no build required\""
   }
 }
