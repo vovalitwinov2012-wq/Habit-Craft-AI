@@ -1,79 +1,101 @@
-// api/ai.js — Vercel serverless function (Node 20 runtime)
-// Использует process.env.OPENROUTER_API_KEY — добавьте в Vercel Environment Variables.
+const express = require('express');
+const router = express.Router();
 
-const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
-
-module.exports = async (req, res) => {
-  if (req.method !== 'POST') {
-    res.status(405).json({ success: false, message: 'Method Not Allowed' });
-    return;
-  }
-
-  const apiKey = process.env.OPENROUTER_API_KEY;
-  if (!apiKey) {
-    res.status(500).json({ success: false, message: 'AI API key not configured on server' });
-    return;
-  }
-
+router.post('/', async (req, res) => {
   try {
-    const raw = (req.body && Object.keys(req.body).length) ? req.body : JSON.parse(await getRawBody(req));
-    const { type = 'advice', message = '' } = raw;
+    const { habit, context } = req.body;
+    const apiKey = process.env.OPENROUTER_API_KEY;
 
-    const messages = type === 'habit_generation'
-      ? [
-          { role: 'system', content: 'Ты эксперт по привычкам. Верни ТОЛЬКО JSON в определённом формате.'},
-          { role: 'user', content: `Создай привычку по описанию: "${String(message)}"` }
-        ]
-      : [
-          { role: 'system', content: 'Ты AI-коуч по привычкам. Дай короткий, поддерживающий совет на русском.'},
-          { role: 'user', content: String(message) }
-        ];
+    if (!apiKey) {
+      return res.status(500).json({ 
+        error: 'OPENROUTER_API_KEY not configured. Please check your Vercel environment variables.' 
+      });
+    }
 
-    const requestBody = {
-      model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3.1:free',
-      messages,
-      max_tokens: type === 'habit_generation' ? 500 : 300,
-      temperature: 0.7
-    };
+    if (!habit || !context) {
+      return res.status(400).json({ 
+        error: 'Missing required parameters: habit and context are required.' 
+      });
+    }
 
-    const r = await fetch(OPENROUTER_URL, {
+    const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
-      body: JSON.stringify(requestBody)
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json',
+        'HTTP-Referer': 'https://habit-craft.vercel.app',
+        'X-Title': 'Habit Craft'
+      },
+      body: JSON.stringify({
+        model: 'openai/gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: `You are an AI habit coach specializing in behavior change and personal development. 
+                     Provide practical, actionable advice that is:
+                     - Encouraging and motivational
+                     - Scientifically grounded
+                     - Specific to the user's situation
+                     - Broken down into manageable steps
+                     - Focused on sustainable habit formation
+                     
+                     Keep responses concise but comprehensive (150-300 words).`
+          },
+          {
+            role: 'user',
+            content: `I'm working on developing this habit: "${habit}". 
+                     Here's my current situation: "${context}".
+                     
+                     Please provide me with:
+                     1. Practical advice for starting/maintaining this habit
+                     2. Common pitfalls to avoid
+                     3. Strategies for overcoming obstacles
+                     4. Ways to track progress effectively
+                     5. Motivation tips for staying consistent`
+          }
+        ],
+        max_tokens: 500,
+        temperature: 0.7
+      })
     });
 
-    if (!r.ok) {
-      const t = await r.text().catch(()=>'');
-      res.status(502).json({ success: false, message: 'AI provider error', details: t });
-      return;
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`OpenRouter API error: ${response.status} ${response.statusText} - ${errorData}`);
     }
 
-    const data = await r.json();
-    const content = data?.choices?.[0]?.message?.content ?? JSON.stringify(data);
-
-    if (type === 'habit_generation') {
-      try {
-        const cleaned = content.replace(/```json|```/g, '').trim();
-        const match = cleaned.match(/\{[\s\S]*\}/);
-        const json = match ? JSON.parse(match[0]) : null;
-        if (json) { res.status(200).json({ success: true, habit: json }); return; }
-      } catch (e) { /* fallthrough */ }
-      res.status(200).json({ success: true, habitRaw: content });
-      return;
+    const data = await response.json();
+    
+    if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+      throw new Error('Invalid response format from AI service');
     }
 
-    res.status(200).json({ success: true, answer: content });
-  } catch (err) {
-    console.error('AI proxy error:', err);
-    res.status(500).json({ success: false, message: 'Internal server error', error: String(err) });
+    const advice = data.choices[0].message.content;
+    
+    res.json({
+      success: true,
+      advice: advice,
+      usage: data.usage || null
+    });
+
+  } catch (error) {
+    console.error('AI API Error:', error);
+    
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to generate advice. Please try again later.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
-};
+});
 
-function getRawBody(req) {
-  return new Promise((resolve, reject) => {
-    let data = '';
-    req.on('data', chunk => data += chunk);
-    req.on('end', () => resolve(data));
-    req.on('error', err => reject(err));
+// Health check endpoint
+router.get('/health', (req, res) => {
+  res.json({ 
+    status: 'OK', 
+    timestamp: new Date().toISOString(),
+    nodeVersion: process.version
   });
-}
+});
+
+module.exports = router;
