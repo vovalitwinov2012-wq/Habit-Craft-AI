@@ -2,6 +2,7 @@
 class StorageManager {
     constructor() {
         this.userId = this.getUserId();
+        console.log('📦 StorageManager initialized for user:', this.userId);
     }
 
     getUserId() {
@@ -19,9 +20,10 @@ class StorageManager {
         try {
             const storageKey = this.getStorageKey(key);
             localStorage.setItem(storageKey, JSON.stringify(value));
+            console.log('💾 Saved:', key, value);
             return true;
         } catch (error) {
-            console.error('Storage set error:', error);
+            console.error('❌ Storage set error:', error);
             return false;
         }
     }
@@ -30,9 +32,11 @@ class StorageManager {
         try {
             const storageKey = this.getStorageKey(key);
             const data = localStorage.getItem(storageKey);
-            return data ? JSON.parse(data) : null;
+            const result = data ? JSON.parse(data) : null;
+            console.log('📂 Loaded:', key, result);
+            return result;
         } catch (error) {
-            console.error('Storage get error:', error);
+            console.error('❌ Storage get error:', error);
             return null;
         }
     }
@@ -41,30 +45,14 @@ class StorageManager {
         try {
             const storageKey = this.getStorageKey(key);
             localStorage.removeItem(storageKey);
+            console.log('🗑️ Removed:', key);
             return true;
         } catch (error) {
-            console.error('Storage remove error:', error);
-            return false;
-        }
-    }
-
-    clearUserData() {
-        try {
-            const keysToRemove = [];
-            for (let i = 0; i < localStorage.length; i++) {
-                const key = localStorage.key(i);
-                if (key.includes(this.userId)) {
-                    keysToRemove.push(key);
-                }
-            }
-            
-            keysToRemove.forEach(key => localStorage.removeItem(key));
-            return true;
-        } catch (error) {
-            console.error('Storage clear error:', error);
+            console.error('❌ Storage remove error:', error);
             return false;
         }
     }
 }
 
 window.StorageManager = StorageManager;
+console.log('✅ Storage module loaded');

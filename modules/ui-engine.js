@@ -5,26 +5,33 @@ class UIEngine {
         this.aiCoach = aiCoach;
         this.currentTheme = this.loadTheme();
         this.currentAISuggestion = null;
+        console.log('🎨 UIEngine initialized');
     }
 
     init() {
+        console.log('🚀 Initializing UI...');
         this.applyTheme();
         this.setupEventListeners();
         this.render();
+        console.log('✅ UI initialized successfully');
     }
 
     loadTheme() {
         const saved = new StorageManager().getItem('theme');
-        return saved || CONFIG.DEFAULT_THEME;
+        const theme = saved || CONFIG.DEFAULT_THEME;
+        console.log('🎨 Theme loaded:', theme);
+        return theme;
     }
 
     saveTheme(theme) {
         this.currentTheme = theme;
         new StorageManager().setItem('theme', theme);
+        console.log('💾 Theme saved:', theme);
     }
 
     toggleTheme() {
         const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
+        console.log('🌙 Toggling theme to:', newTheme);
         this.saveTheme(newTheme);
         this.applyTheme();
     }
@@ -35,41 +42,93 @@ class UIEngine {
         if (themeIcon) {
             themeIcon.textContent = this.currentTheme === 'light' ? '🌙' : '☀️';
         }
+        console.log('🎨 Theme applied:', this.currentTheme);
     }
 
     setupEventListeners() {
+        console.log('🔧 Setting up event listeners...');
+        
         // Theme toggle
-        document.getElementById('theme-toggle').addEventListener('click', () => this.toggleTheme());
+        document.getElementById('theme-toggle').addEventListener('click', () => {
+            console.log('🎨 Theme button clicked');
+            this.toggleTheme();
+        });
         
         // Add habit buttons
-        document.getElementById('add-habit-btn').addEventListener('click', () => this.openAddHabitModal());
-        document.getElementById('create-first-habit').addEventListener('click', () => this.openAddHabitModal());
+        document.getElementById('add-habit-btn').addEventListener('click', () => {
+            console.log('➕ Add habit button clicked');
+            this.openAddHabitModal();
+        });
+        
+        document.getElementById('create-first-habit').addEventListener('click', () => {
+            console.log('🚀 Create first habit button clicked');
+            this.openAddHabitModal();
+        });
         
         // Modal controls
-        document.getElementById('close-modal').addEventListener('click', () => this.closeModals());
-        document.getElementById('cancel-habit').addEventListener('click', () => this.closeModals());
-        document.getElementById('close-stats').addEventListener('click', () => this.closeModals());
-        document.getElementById('save-habit').addEventListener('click', () => this.saveHabit());
+        document.getElementById('close-modal').addEventListener('click', () => {
+            console.log('❌ Close modal clicked');
+            this.closeModals();
+        });
+        
+        document.getElementById('cancel-habit').addEventListener('click', () => {
+            console.log('❌ Cancel habit clicked');
+            this.closeModals();
+        });
+        
+        document.getElementById('close-stats').addEventListener('click', () => {
+            console.log('❌ Close stats clicked');
+            this.closeModals();
+        });
+        
+        document.getElementById('save-habit').addEventListener('click', () => {
+            console.log('💾 Save habit clicked');
+            this.saveHabit();
+        });
         
         // AI generation
-        document.getElementById('generate-with-ai').addEventListener('click', () => this.generateHabitWithAI());
-        document.getElementById('use-suggestion').addEventListener('click', () => this.useAISuggestion());
+        document.getElementById('generate-with-ai').addEventListener('click', () => {
+            console.log('🤖 Generate with AI clicked');
+            this.generateHabitWithAI();
+        });
+        
+        document.getElementById('use-suggestion').addEventListener('click', () => {
+            console.log('✅ Use suggestion clicked');
+            this.useAISuggestion();
+        });
         
         // AI chat
-        document.getElementById('ai-send-btn').addEventListener('click', () => this.sendAIMessage());
+        document.getElementById('ai-send-btn').addEventListener('click', () => {
+            console.log('➤ AI send clicked');
+            this.sendAIMessage();
+        });
+        
         document.getElementById('ai-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.sendAIMessage();
+            if (e.key === 'Enter') {
+                console.log('↩️ AI input enter pressed');
+                this.sendAIMessage();
+            }
         });
         
         // Stats view
-        document.getElementById('view-all-stats').addEventListener('click', () => this.openStatsModal());
+        document.getElementById('view-all-stats').addEventListener('click', () => {
+            console.log('📊 View all stats clicked');
+            this.openStatsModal();
+        });
         
         // Modal overlay close
         document.getElementById('add-habit-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'add-habit-modal') this.closeModals();
+            if (e.target.id === 'add-habit-modal') {
+                console.log('🎯 Modal overlay clicked');
+                this.closeModals();
+            }
         });
+        
         document.getElementById('stats-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'stats-modal') this.closeModals();
+            if (e.target.id === 'stats-modal') {
+                console.log('🎯 Stats modal overlay clicked');
+                this.closeModals();
+            }
         });
         
         // Tabs
@@ -77,22 +136,29 @@ class UIEngine {
         
         // Color picker and frequency selector
         this.setupFormControls();
+        
+        console.log('✅ Event listeners setup complete');
     }
 
     setupTabs() {
+        console.log('📑 Setting up tabs...');
         const tabs = document.querySelectorAll('.tab');
         tabs.forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.getAttribute('data-tab');
+                console.log('📑 Tab clicked:', tabName);
                 this.switchTab(tabName);
             });
         });
     }
 
     setupFormControls() {
+        console.log('🎛️ Setting up form controls...');
+        
         // Color picker
         document.querySelectorAll('.color-option').forEach(option => {
             option.addEventListener('click', (e) => {
+                console.log('🎨 Color selected:', e.target.getAttribute('data-color'));
                 document.querySelectorAll('.color-option').forEach(opt => {
                     opt.classList.remove('selected');
                 });
@@ -103,6 +169,8 @@ class UIEngine {
         // Frequency selector
         document.querySelectorAll('.frequency-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
+                const frequency = e.target.getAttribute('data-frequency');
+                console.log('📅 Frequency selected:', frequency);
                 document.querySelectorAll('.frequency-btn').forEach(b => {
                     b.classList.remove('active');
                 });
@@ -112,6 +180,7 @@ class UIEngine {
     }
 
     switchTab(tabName) {
+        console.log('🔄 Switching to tab:', tabName);
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
         });
@@ -122,11 +191,13 @@ class UIEngine {
     }
 
     render() {
+        console.log('🔄 Rendering UI...');
         this.renderTodayDate();
         this.renderHabits();
         this.renderStats();
         this.renderAIStatus();
         this.checkEmptyState();
+        console.log('✅ UI rendered');
     }
 
     renderTodayDate() {
@@ -139,16 +210,19 @@ class UIEngine {
         };
         const dateString = today.toLocaleDateString('ru-RU', options);
         document.getElementById('today-date').textContent = dateString;
+        console.log('📅 Today date rendered:', dateString);
     }
 
     renderHabits() {
         const container = document.getElementById('today-habits');
         const habits = this.habitManager.getTodayHabits();
         
+        console.log('📋 Rendering habits:', habits.length);
         container.innerHTML = '';
 
         if (habits.length === 0) {
             container.innerHTML = '<div class="text-center" style="color: var(--text-secondary); padding: var(--space-xl);">Нет привычек на сегодня</div>';
+            this.updateDailyProgress();
             return;
         }
 
@@ -162,11 +236,11 @@ class UIEngine {
 
     createHabitElement(habit) {
         const div = document.createElement('div');
-        div.className = `habit-card ${this.habitManager.isHabitCompletedToday(habit.id) ? 'completed' : ''}`;
+        const isCompleted = this.habitManager.isHabitCompletedToday(habit.id);
+        div.className = `habit-card ${isCompleted ? 'completed' : ''}`;
         div.style.borderLeft = `4px solid ${habit.color}`;
 
         const stats = this.habitManager.getHabitStats(habit.id);
-        const isCompleted = this.habitManager.isHabitCompletedToday(habit.id);
 
         div.innerHTML = `
             <div class="habit-header">
@@ -193,28 +267,34 @@ class UIEngine {
         const checkbox = div.querySelector('.habit-checkbox');
         checkbox.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log('☑️ Habit checkbox clicked:', habit.id);
             this.toggleHabitCompletion(habit.id);
         });
 
         const statsBtn = div.querySelector('.stats-btn');
         statsBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log('📊 Habit stats clicked:', habit.id);
             this.showHabitStats(habit);
         });
 
         const deleteBtn = div.querySelector('.delete-btn');
         deleteBtn.addEventListener('click', (e) => {
             e.stopPropagation();
+            console.log('🗑️ Delete habit clicked:', habit.id);
             this.deleteHabit(habit.id);
         });
 
+        console.log('✅ Habit element created:', habit.id);
         return div;
     }
 
     toggleHabitCompletion(habitId) {
+        console.log('🔄 Toggling habit completion:', habitId);
         const completed = this.habitManager.toggleHabitCompletion(habitId);
         
         if (completed) {
+            console.log('🎉 Habit completed, showing celebration');
             this.showCelebration();
         }
         
@@ -243,6 +323,7 @@ class UIEngine {
 
     deleteHabit(habitId) {
         if (confirm('Удалить эту привычку? Это действие нельзя отменить.')) {
+            console.log('🗑️ Deleting habit:', habitId);
             this.habitManager.deleteHabit(habitId);
             this.render();
             this.showNotification('Привычка удалена');
@@ -254,6 +335,7 @@ class UIEngine {
         document.getElementById('total-habits').textContent = stats.totalHabits;
         document.getElementById('completion-rate').textContent = stats.overallCompletionRate + '%';
         document.getElementById('current-streak').textContent = stats.longestStreak;
+        console.log('📊 Stats rendered');
     }
 
     updateDailyProgress() {
@@ -271,11 +353,13 @@ class UIEngine {
         const percentage = Math.round((completed / habits.length) * 100);
         document.getElementById('daily-progress-fill').style.width = percentage + '%';
         document.getElementById('daily-progress-text').textContent = percentage + '% выполнено';
+        console.log('📈 Daily progress updated:', percentage + '%');
     }
 
     renderAIStatus() {
         const usage = this.aiCoach.getUsageStats();
         document.getElementById('ai-credits').textContent = `${usage.remainingToday} запросов осталось`;
+        console.log('🤖 AI status rendered');
     }
 
     checkEmptyState() {
@@ -285,13 +369,16 @@ class UIEngine {
         if (this.habitManager.habits.length === 0) {
             emptyState.classList.add('active');
             mainContent.style.display = 'none';
+            console.log('🌟 Empty state shown');
         } else {
             emptyState.classList.remove('active');
             mainContent.style.display = 'block';
+            console.log('📱 Main content shown');
         }
     }
 
     openAddHabitModal() {
+        console.log('📝 Opening add habit modal');
         document.getElementById('add-habit-modal').classList.add('active');
         this.switchTab('manual');
         document.getElementById('habit-name').value = '';
@@ -312,6 +399,7 @@ class UIEngine {
     }
 
     closeModals() {
+        console.log('🔒 Closing all modals');
         document.querySelectorAll('.modal-overlay').forEach(modal => {
             modal.classList.remove('active');
         });
@@ -319,6 +407,8 @@ class UIEngine {
 
     async generateHabitWithAI() {
         const description = document.getElementById('ai-habit-description').value.trim();
+        console.log('🤖 Generating habit with AI description:', description);
+        
         if (!description) {
             this.showNotification('Введите описание привычки');
             return;
@@ -349,6 +439,7 @@ class UIEngine {
     }
 
     displayAISuggestion(suggestion) {
+        console.log('💡 Displaying AI suggestion:', suggestion);
         document.getElementById('suggestion-name').textContent = suggestion.name;
         document.getElementById('suggestion-description').textContent = suggestion.description;
         
@@ -365,6 +456,7 @@ class UIEngine {
     useAISuggestion() {
         if (!this.currentAISuggestion) return;
 
+        console.log('✅ Using AI suggestion:', this.currentAISuggestion);
         this.switchTab('manual');
         document.getElementById('habit-name').value = this.currentAISuggestion.name;
         document.getElementById('habit-description').value = this.currentAISuggestion.description;
@@ -392,6 +484,8 @@ class UIEngine {
         const selectedColor = document.querySelector('.color-option.selected')?.getAttribute('data-color');
         const selectedFrequency = document.querySelector('.frequency-btn.active')?.getAttribute('data-frequency');
 
+        console.log('💾 Saving habit:', { name, description, selectedColor, selectedFrequency });
+
         if (!name) {
             this.showNotification('Введите название привычки');
             return;
@@ -416,6 +510,8 @@ class UIEngine {
     async sendAIMessage() {
         const input = document.getElementById('ai-input');
         const message = input.value.trim();
+        
+        console.log('🤖 Sending AI message:', message);
         
         if (!message) return;
 
@@ -457,6 +553,7 @@ class UIEngine {
     }
 
     openStatsModal() {
+        console.log('📊 Opening stats modal');
         document.getElementById('stats-modal').classList.add('active');
         this.renderDetailedStats();
     }
@@ -478,6 +575,8 @@ class UIEngine {
                 </div>
             `;
         }).join('');
+        
+        console.log('📈 Detailed stats rendered');
     }
 
     renderCalendar() {
@@ -522,6 +621,7 @@ class UIEngine {
     }
 
     showNotification(message) {
+        console.log('💬 Showing notification:', message);
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed;
@@ -534,15 +634,13 @@ class UIEngine {
             z-index: 1001;
             max-width: 300px;
             box-shadow: var(--shadow-lg);
-            animation: slideInRight 0.3s ease;
             font-weight: 500;
         `;
         notification.textContent = message;
         document.body.appendChild(notification);
         
         setTimeout(() => {
-            notification.style.animation = 'slideOutRight 0.3s ease';
-            setTimeout(() => notification.remove(), 300);
+            notification.remove();
         }, 3000);
     }
 
@@ -574,3 +672,4 @@ class UIEngine {
 }
 
 window.UIEngine = UIEngine;
+console.log('✅ UIEngine module loaded');

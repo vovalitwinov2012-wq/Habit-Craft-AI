@@ -55,7 +55,6 @@ body {
     background: var(--bg-primary);
     color: var(--text-primary);
     line-height: 1.5;
-    transition: all 0.3s ease;
 }
 
 .app {
@@ -108,13 +107,12 @@ body {
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
     font-size: 16px;
+    transition: all 0.2s ease;
 }
 
 .icon-btn:hover {
     background: var(--bg-tertiary);
-    transform: translateY(-1px);
 }
 
 .icon-btn.primary {
@@ -124,7 +122,6 @@ body {
 
 .icon-btn.primary:hover {
     background: var(--primary-dark);
-    transform: translateY(-1px);
 }
 
 .daily-progress {
@@ -247,11 +244,6 @@ body {
 .habit-actions {
     display: flex;
     gap: var(--space-xs);
-    opacity: 0;
-    transition: opacity 0.2s ease;
-}
-
-.habit-card:hover .habit-actions {
     opacity: 1;
 }
 
@@ -366,7 +358,6 @@ body {
 
 .ai-send-btn:hover {
     background: var(--primary-dark);
-    transform: scale(1.05);
 }
 
 .ai-response {
@@ -435,7 +426,6 @@ body {
 
 .btn-primary:hover {
     background: var(--primary-dark);
-    transform: translateY(-1px);
 }
 
 .btn-primary.large {
@@ -446,7 +436,6 @@ body {
 .btn-primary:disabled {
     opacity: 0.6;
     cursor: not-allowed;
-    transform: none;
 }
 
 .btn-secondary {
@@ -463,7 +452,6 @@ body {
 
 .btn-secondary:hover {
     background: var(--bg-tertiary);
-    transform: translateY(-1px);
 }
 
 .btn-secondary.full-width {
@@ -483,7 +471,6 @@ body {
     justify-content: center;
     z-index: 1000;
     padding: var(--space-md);
-    backdrop-filter: blur(4px);
 }
 
 .modal-overlay.active {
@@ -498,22 +485,10 @@ body {
     max-height: 90vh;
     overflow-y: auto;
     box-shadow: var(--shadow-lg);
-    animation: modalSlideIn 0.3s ease;
 }
 
 .modal.large {
     max-width: 500px;
-}
-
-@keyframes modalSlideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-20px) scale(0.95);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
 }
 
 .modal-header {
@@ -602,12 +577,6 @@ body {
 
 .tab-content.active {
     display: block;
-    animation: fadeIn 0.3s ease;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
 }
 
 /* Form Elements */
@@ -704,18 +673,6 @@ body {
     padding: var(--space-md);
     margin-top: var(--space-lg);
     text-align: left;
-    animation: slideUp 0.3s ease;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
 }
 
 .suggestion-header {
@@ -881,27 +838,4 @@ body {
 
 .habit-card.completed {
     animation: celebrate 0.6s ease;
-}
-
-/* Additional animations */
-@keyframes slideInRight {
-    from {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(100%);
-        opacity: 0;
-    }
 }

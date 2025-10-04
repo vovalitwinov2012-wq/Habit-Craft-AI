@@ -3,6 +3,7 @@ class HabitManager {
     constructor() {
         this.storage = new StorageManager();
         this.habits = this.loadHabits();
+        console.log('📊 HabitManager initialized with', this.habits.length, 'habits');
     }
 
     loadHabits() {
@@ -18,12 +19,16 @@ class HabitManager {
     }
 
     saveHabits() {
-        return this.storage.setItem(CONFIG.STORAGE_KEYS.HABITS, this.habits);
+        const success = this.storage.setItem(CONFIG.STORAGE_KEYS.HABITS, this.habits);
+        console.log('💾 Habits saved:', success);
+        return success;
     }
 
     canCreateHabit() {
         const currentCount = this.habits.length;
-        return currentCount < CONFIG.MAX_FREE_HABITS;
+        const canCreate = currentCount < CONFIG.MAX_FREE_HABITS;
+        console.log('📝 Can create habit:', canCreate, `(${currentCount}/${CONFIG.MAX_FREE_HABITS})`);
+        return canCreate;
     }
 
     createHabit(habitData) {
@@ -46,18 +51,23 @@ class HabitManager {
 
         this.habits.push(habit);
         this.saveHabits();
+        console.log('✅ Habit created:', habit);
         return habit;
     }
 
     deleteHabit(habitId) {
         this.habits = this.habits.filter(h => h.id !== habitId);
         this.saveHabits();
+        console.log('🗑️ Habit deleted:', habitId);
         return true;
     }
 
     toggleHabitCompletion(habitId, date = new Date()) {
         const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) return false;
+        if (!habit) {
+            console.error('❌ Habit not found:', habitId);
+            return false;
+        }
 
         const dateKey = this.getDateKey(date);
         const completedIndex = habit.completedDates.indexOf(dateKey);
@@ -66,10 +76,12 @@ class HabitManager {
             // Remove completion
             habit.completedDates.splice(completedIndex, 1);
             habit.totalCompletions = Math.max(0, habit.totalCompletions - 1);
+            console.log('❌ Habit uncompleted:', habitId, dateKey);
         } else {
             // Add completion
             habit.completedDates.push(dateKey);
             habit.totalCompletions++;
+            console.log('✅ Habit completed:', habitId, dateKey);
         }
 
         // Update streak
@@ -97,6 +109,7 @@ class HabitManager {
         }
         
         habit.streak = currentStreak;
+        console.log('🔥 Streak updated:', habit.name, currentStreak);
     }
 
     isHabitCompletedToday(habitId) {
@@ -104,14 +117,16 @@ class HabitManager {
         if (!habit) return false;
 
         const todayKey = this.getDateKey(new Date());
-        return habit.completedDates.includes(todayKey);
+        const completed = habit.completedDates.includes(todayKey);
+        console.log('📅 Habit completed today:', habitId, completed);
+        return completed;
     }
 
     getTodayHabits() {
         const today = new Date();
         const dayOfWeek = today.getDay();
         
-        return this.habits.filter(habit => {
+        const todayHabits = this.habits.filter(habit => {
             if (!habit.isActive) return false;
             
             switch (habit.frequency) {
@@ -125,6 +140,9 @@ class HabitManager {
                     return true;
             }
         });
+
+        console.log('📋 Today habits:', todayHabits.length);
+        return todayHabits;
     }
 
     getHabitStats(habitId) {
@@ -134,13 +152,16 @@ class HabitManager {
         const totalDays = Math.ceil((new Date() - new Date(habit.createdAt)) / (1000 * 60 * 60 * 24));
         const completionRate = totalDays > 0 ? Math.round((habit.totalCompletions / totalDays) * 100) : 0;
 
-        return {
+        const stats = {
             streak: habit.streak,
             totalCompletions: habit.totalCompletions,
             completionRate,
             totalDays,
             lastCompletion: habit.completedDates[habit.completedDates.length - 1] || null
         };
+
+        console.log('📈 Habit stats:', habitId, stats);
+        return stats;
     }
 
     getOverallStats() {
@@ -162,13 +183,16 @@ class HabitManager {
             ? Math.round((totalCompletions / totalPossibleCompletions) * 100)
             : 0;
 
-        return {
+        const stats = {
             totalHabits,
             activeHabits,
             overallCompletionRate,
             longestStreak,
             totalCompletions
         };
+
+        console.log('📊 Overall stats:', stats);
+        return stats;
     }
 
     getDateKey(date) {
@@ -181,3 +205,4 @@ class HabitManager {
 }
 
 window.HabitManager = HabitManager;
+console.log('✅ HabitManager module loaded');

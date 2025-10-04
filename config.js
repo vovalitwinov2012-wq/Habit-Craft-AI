@@ -35,3 +35,5 @@ const CONFIG = {
 window.APP_CONFIG = window.APP_CONFIG || {
     OPENROUTER_API_KEY: null
 };
+
+console.log('✅ Config loaded');

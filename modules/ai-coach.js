@@ -7,6 +7,7 @@ class AICoach {
         this.isAvailable = !!this.apiKey;
         this.baseURL = "https://openrouter.ai/api/v1";
         this.model = "deepseek/deepseek-chat-v3.1:free";
+        console.log('🤖 AICoach initialized, available:', this.isAvailable);
     }
 
     loadDailyRequests() {
@@ -23,23 +24,31 @@ class AICoach {
             this.storage.setItem(CONFIG.STORAGE_KEYS.AI_REQUESTS, requests);
         }
         
+        console.log('📊 AI requests today:', requests.count);
         return requests;
     }
 
     canMakeRequest() {
-        return this.dailyRequests.count < CONFIG.AI_REQUESTS_PER_DAY;
+        const canMake = this.dailyRequests.count < CONFIG.AI_REQUESTS_PER_DAY;
+        console.log('🔍 Can make AI request:', canMake);
+        return canMake;
     }
 
     getRemainingRequests() {
-        return Math.max(0, CONFIG.AI_REQUESTS_PER_DAY - this.dailyRequests.count);
+        const remaining = Math.max(0, CONFIG.AI_REQUESTS_PER_DAY - this.dailyRequests.count);
+        console.log('🎫 Remaining AI requests:', remaining);
+        return remaining;
     }
 
     async getAdvice(userMessage, context = {}) {
+        console.log('💭 Getting AI advice:', userMessage);
+        
         if (!this.canMakeRequest()) {
             throw new Error('DAILY_LIMIT_REACHED');
         }
 
         if (!this.isAvailable) {
+            console.log('🤖 Using mock AI response');
             return this.getMockAdvice(userMessage, context);
         }
 
@@ -49,19 +58,23 @@ class AICoach {
 
         try {
             const response = await this.makeAIRequest(userMessage, 'advice', context);
+            console.log('✅ AI advice received');
             return response;
         } catch (error) {
-            console.error('AI Advice error:', error);
+            console.error('❌ AI Advice error:', error);
             return this.getMockAdvice(userMessage, context);
         }
     }
 
     async generateHabit(description, preferences = {}) {
+        console.log('🎨 Generating habit with AI:', description);
+        
         if (!this.canMakeRequest()) {
             throw new Error('DAILY_LIMIT_REACHED');
         }
 
         if (!this.isAvailable) {
+            console.log('🤖 Using mock habit generation');
             return this.generateMockHabit(description, preferences);
         }
 
@@ -71,14 +84,17 @@ class AICoach {
 
         try {
             const response = await this.makeAIRequest(description, 'habit_generation', preferences);
+            console.log('✅ AI habit generated');
             return this.parseHabitResponse(response);
         } catch (error) {
-            console.error('AI Habit generation error:', error);
+            console.error('❌ AI Habit generation error:', error);
             return this.generateMockHabit(description, preferences);
         }
     }
 
     async makeAIRequest(userMessage, type, context = {}) {
+        console.log('🌐 Making AI request to:', this.model);
+        
         const messages = this.buildMessages(userMessage, type, context);
         
         const requestBody = {
@@ -169,15 +185,18 @@ JSON формат:
 
             const habitData = JSON.parse(jsonMatch[0]);
 
-            return {
+            const parsedHabit = {
                 name: habitData.name || 'Новая привычка',
                 description: habitData.description || 'Важная привычка для саморазвития',
                 color: this.validateColor(habitData.color),
                 frequency: this.validateFrequency(habitData.frequency),
                 motivationTips: Array.isArray(habitData.motivationTips) ? habitData.motivationTips : []
             };
+
+            console.log('✅ Parsed AI habit:', parsedHabit);
+            return parsedHabit;
         } catch (error) {
-            console.error('Failed to parse AI habit response:', error);
+            console.error('❌ Failed to parse AI habit response:', error);
             return this.generateMockHabit();
         }
     }
@@ -204,6 +223,7 @@ JSON формат:
                 ];
                 
                 const randomAdvice = advicePool[Math.floor(Math.random() * advicePool.length)];
+                console.log('🤖 Mock advice given');
                 resolve(randomAdvice);
             }, 800);
         });
@@ -238,6 +258,7 @@ JSON формат:
                 ];
 
                 const selectedHabit = habits[Math.floor(Math.random() * habits.length)];
+                console.log('🤖 Mock habit generated:', selectedHabit);
                 resolve(selectedHabit);
             }, 1000);
         });
@@ -260,14 +281,18 @@ JSON формат:
     }
 
     getUsageStats() {
-        return {
+        const stats = {
             usedToday: this.dailyRequests.count,
             remainingToday: this.getRemainingRequests(),
             totalUsed: this.dailyRequests.totalUsed,
             isAvailable: this.isAvailable,
             model: this.model
         };
+        
+        console.log('📊 AI usage stats:', stats);
+        return stats;
     }
 }
 
 window.AICoach = AICoach;
+console.log('✅ AICoach module loaded');
