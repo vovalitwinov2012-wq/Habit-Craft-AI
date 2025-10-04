@@ -7,9 +7,7 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <header>
-    <h1>HabitCraft AI</h1>
-  </header>
+  <header><h1>HabitCraft AI</h1></header>
 
   <main>
     <section id="today-habits"></section>
@@ -18,14 +16,16 @@
     <div id="add-habit-modal" class="modal">
       <div class="modal-content">
         <input id="habit-name" placeholder="Название привычки" />
-        <textarea id="habit-description" placeholder="Описание"></textarea>
-        <button id="save-habit">Сохранить</button>
-        <button id="close-modal">Закрыть</button>
+        <textarea id="habit-description" placeholder="Описание привычки"></textarea>
+        <div class="actions">
+          <button id="save-habit">Сохранить</button>
+          <button id="close-modal">Закрыть</button>
+        </div>
       </div>
     </div>
 
     <section id="ai-section">
-      <input id="ai-input" placeholder="Спросить AI-коуча..." />
+      <input id="ai-input" placeholder="Спросите AI-коуча..." />
       <button id="ai-send-btn">Отправить</button>
       <div id="ai-response"></div>
     </section>

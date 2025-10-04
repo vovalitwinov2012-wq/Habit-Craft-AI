@@ -3,7 +3,16 @@
   "buildCommand": "",
   "outputDirectory": ".",
   "routes": [
-    { "src": "/(.*\.(js|css|html|png|jpg|svg))", "continue": true },
-    { "src": "/", "dest": "/index.html" }
+    {
+      "src": "/(.*\\.(?:js|css|html|png|jpg|svg))",
+      "headers": {
+        "Cache-Control": "public, max-age=0, must-revalidate"
+      },
+      "continue": true
+    },
+    {
+      "src": "/.*",
+      "dest": "/index.html"
+    }
   ]
 }
