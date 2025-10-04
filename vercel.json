@@ -1,11 +1,10 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "api/ai.js",
-      "use": "@vercel/node@3.0.0"
+  "functions": {
+    "api/ai.js": {
+      "runtime": "nodejs20.x"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/ai",

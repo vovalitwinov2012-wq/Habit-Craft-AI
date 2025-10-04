@@ -1,6 +1,5 @@
-// api/ai.js (Vercel serverless function, Node 18 runtime)
-// Прокси к OpenRouter (или иному совместимому провайдеру).
-// Требует переменной окружения OPENROUTER_API_KEY в настройках Vercel.
+// api/ai.js — Vercel serverless function (Node 20 runtime)
+// Использует process.env.OPENROUTER_API_KEY — добавьте в Vercel Environment Variables.
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -17,32 +16,18 @@ module.exports = async (req, res) => {
   }
 
   try {
-    // Получаем тело запроса (req.body может быть пустым если Vercel не распарсил)
-    const body = (req.body && Object.keys(req.body).length) ? req.body : JSON.parse(await getRawBody(req));
-    const { type = 'advice', message = '', preferences = {} } = body;
+    const raw = (req.body && Object.keys(req.body).length) ? req.body : JSON.parse(await getRawBody(req));
+    const { type = 'advice', message = '' } = raw;
 
-    let messages;
-    if (type === 'habit_generation') {
-      messages = [
-        {
-          role: 'system',
-          content: `Ты эксперт по формированию привычек. Верни ТОЛЬКО JSON-объект в формате:
-{
-  "name": "Название привычки (2-4 слова)",
-  "description": "Короткое мотивирующее описание",
-  "color": "#4CAF50",
-  "frequency": "daily",
-  "motivationTips": ["Совет 1","Совет 2"]
-}`
-        },
-        { role: 'user', content: `Создай привычку: "${String(message)}"` }
-      ];
-    } else {
-      messages = [
-        { role: 'system', content: 'Ты AI-коуч по привычкам. Дай короткий поддерживающий совет (2-3 предложения). Отвечай на русском.' },
-        { role: 'user', content: String(message) }
-      ];
-    }
+    const messages = type === 'habit_generation'
+      ? [
+          { role: 'system', content: 'Ты эксперт по привычкам. Верни ТОЛЬКО JSON в определённом формате.'},
+          { role: 'user', content: `Создай привычку по описанию: "${String(message)}"` }
+        ]
+      : [
+          { role: 'system', content: 'Ты AI-коуч по привычкам. Дай короткий, поддерживающий совет на русском.'},
+          { role: 'user', content: String(message) }
+        ];
 
     const requestBody = {
       model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3.1:free',
@@ -53,46 +38,31 @@ module.exports = async (req, res) => {
 
     const r = await fetch(OPENROUTER_URL, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
       body: JSON.stringify(requestBody)
     });
 
     if (!r.ok) {
-      const text = await r.text().catch(() => '');
-      res.status(502).json({ success: false, message: 'AI provider error', details: text });
+      const t = await r.text().catch(()=>'');
+      res.status(502).json({ success: false, message: 'AI provider error', details: t });
       return;
     }
 
     const data = await r.json();
-    let content = '';
-
-    if (data?.choices && Array.isArray(data.choices) && data.choices[0]?.message) {
-      content = data.choices[0].message.content;
-    } else {
-      content = typeof data === 'string' ? data : JSON.stringify(data);
-    }
+    const content = data?.choices?.[0]?.message?.content ?? JSON.stringify(data);
 
     if (type === 'habit_generation') {
       try {
         const cleaned = content.replace(/```json|```/g, '').trim();
         const match = cleaned.match(/\{[\s\S]*\}/);
         const json = match ? JSON.parse(match[0]) : null;
-        if (json) {
-          res.status(200).json({ success: true, habit: json });
-          return;
-        }
-      } catch (err) {
-        // fallthrough
-      }
+        if (json) { res.status(200).json({ success: true, habit: json }); return; }
+      } catch (e) { /* fallthrough */ }
       res.status(200).json({ success: true, habitRaw: content });
       return;
-    } else {
-      res.status(200).json({ success: true, answer: content });
-      return;
     }
+
+    res.status(200).json({ success: true, answer: content });
   } catch (err) {
     console.error('AI proxy error:', err);
     res.status(500).json({ success: false, message: 'Internal server error', error: String(err) });
