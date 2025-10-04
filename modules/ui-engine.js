@@ -1,11 +1,10 @@
-// UI Engine with Complete Functionality
+// UI Engine
 class UIEngine {
     constructor(habitManager, aiCoach) {
         this.habitManager = habitManager;
         this.aiCoach = aiCoach;
         this.currentTheme = this.loadTheme();
         this.currentAISuggestion = null;
-        this.init();
     }
 
     init() {

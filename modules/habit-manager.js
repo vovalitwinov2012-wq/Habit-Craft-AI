@@ -3,7 +3,6 @@ class HabitManager {
     constructor() {
         this.storage = new StorageManager();
         this.habits = this.loadHabits();
-        this.analytics = new Analytics();
     }
 
     loadHabits() {
@@ -47,29 +46,12 @@ class HabitManager {
 
         this.habits.push(habit);
         this.saveHabits();
-        
-        this.analytics.track('habit_created', {
-            habitId: habit.id,
-            frequency: habit.frequency
-        });
-
         return habit;
-    }
-
-    updateHabit(habitId, updates) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) return false;
-
-        Object.assign(habit, updates);
-        this.saveHabits();
-        return true;
     }
 
     deleteHabit(habitId) {
         this.habits = this.habits.filter(h => h.id !== habitId);
         this.saveHabits();
-        
-        this.analytics.track('habit_deleted', { habitId });
         return true;
     }
 
@@ -92,14 +74,7 @@ class HabitManager {
 
         // Update streak
         this.updateStreak(habit);
-        
         this.saveHabits();
-        
-        this.analytics.track('habit_toggled', {
-            habitId,
-            completed: completedIndex === -1,
-            newStreak: habit.streak
-        });
 
         return completedIndex === -1;
     }
@@ -202,28 +177,6 @@ class HabitManager {
 
     generateId() {
         return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
-
-    getHabitCompletionCalendar(habitId, days = 30) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) return [];
-
-        const calendar = [];
-        const today = new Date();
-
-        for (let i = days - 1; i >= 0; i--) {
-            const date = new Date(today);
-            date.setDate(today.getDate() - i);
-            const dateKey = this.getDateKey(date);
-
-            calendar.push({
-                date: dateKey,
-                completed: habit.completedDates.includes(dateKey),
-                isToday: i === 0
-            });
-        }
-
-        return calendar;
     }
 }
 

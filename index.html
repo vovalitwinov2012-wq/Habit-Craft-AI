@@ -40,7 +40,9 @@
                     <span class="date" id="today-date"></span>
                 </div>
                 <div class="habits-container" id="today-habits">
-                    <!-- Habits will be rendered here -->
+                    <div class="text-center" style="color: var(--text-secondary); padding: var(--space-xl);">
+                        Загрузка привычек...
+                    </div>
                 </div>
             </section>
 
@@ -199,10 +201,12 @@
         </div>
     </div>
 
+    <!-- Load scripts -->
     <script src="config.js"></script>
     <script src="modules/storage.js"></script>
     <script src="modules/habit-manager.js"></script>
     <script src="modules/ai-coach.js"></script>
+    <script src="modules/analytics.js"></script>
     <script src="modules/ui-engine.js"></script>
     <script src="app.js"></script>
 </body>

@@ -1,12 +1,7 @@
 {
   "version": 2,
-  "name": "habitcraft-ai",
-  "builds": [
-    {
-      "src": "**/*.js",
-      "use": "@vercel/static"
-    }
-  ],
+  "buildCommand": "echo 'No build needed'",
+  "outputDirectory": ".",
   "routes": [
     {
       "src": "/(.*)",

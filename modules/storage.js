@@ -1,15 +1,14 @@
-// Enhanced Storage Manager
+// Storage Manager
 class StorageManager {
     constructor() {
         this.userId = this.getUserId();
-        this.isTelegram = typeof Telegram !== 'undefined' && Telegram.WebApp;
     }
 
     getUserId() {
-        if (this.isTelegram && Telegram.WebApp.initDataUnsafe?.user?.id) {
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user?.id) {
             return 'tg-' + Telegram.WebApp.initDataUnsafe.user.id.toString();
         }
-        return 'local-' + Math.random().toString(36).substr(2, 9);
+        return 'local-user';
     }
 
     getStorageKey(key) {
@@ -19,12 +18,7 @@ class StorageManager {
     setItem(key, value) {
         try {
             const storageKey = this.getStorageKey(key);
-            const data = JSON.stringify({
-                value,
-                timestamp: Date.now(),
-                version: CONFIG.VERSION
-            });
-            localStorage.setItem(storageKey, data);
+            localStorage.setItem(storageKey, JSON.stringify(value));
             return true;
         } catch (error) {
             console.error('Storage set error:', error);
@@ -36,11 +30,7 @@ class StorageManager {
         try {
             const storageKey = this.getStorageKey(key);
             const data = localStorage.getItem(storageKey);
-            
-            if (!data) return null;
-
-            const parsed = JSON.parse(data);
-            return parsed.value;
+            return data ? JSON.parse(data) : null;
         } catch (error) {
             console.error('Storage get error:', error);
             return null;
