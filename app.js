@@ -1,73 +1,69 @@
-// app.js — главный модуль приложения
-// Импортируем модули как ES-модули
-
+// app.js — точка входа приложения HabitCraft AI
+// Исправлено: ждет готовности Telegram WebApp и DOM перед запуском
 import { CONFIG } from './config.js';
 import StorageManager from './modules/storage.js';
 import HabitManager from './modules/habit-manager.js';
 import AICoach from './modules/ai-coach.js';
 import UIEngine from './modules/ui-engine.js';
 
-// Обёртка инициализации приложения
 class HabitCraftApp {
     constructor() {
-        this.storage = null;
-        this.habitManager = null;
-        this.aiCoach = null;
-        this.uiEngine = null;
+        this.initialized = false;
     }
 
     async init() {
-        try {
-            await this._waitForDOM();
+        await this.waitForDOM();
 
-            this.storage = new StorageManager();
-            this.habitManager = new HabitManager();
-            this.aiCoach = new AICoach();
-            this.uiEngine = new UIEngine(this.habitManager, this.aiCoach);
+        // Telegram WebApp ready
+        await this.initTelegram();
 
-            // Инициализация UI
-            this.uiEngine.init();
+        // Инициализация сервисов
+        this.storage = new StorageManager();
+        this.habitManager = new HabitManager();
+        this.aiCoach = new AICoach();
+        this.ui = new UIEngine(this.habitManager, this.aiCoach);
 
-            // Инициализация Telegram WebApp (если доступно)
-            this._initTelegram();
+        // Запуск UI
+        this.ui.init();
+        this.initialized = true;
 
-            console.log('✅ HabitCraft AI инициализирован');
-        } catch (err) {
-            console.error('Ошибка инициализации приложения', err);
-        }
+        console.log('✅ HabitCraft AI запущен');
     }
 
-    _waitForDOM() {
+    waitForDOM() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => resolve());
+                document.addEventListener('DOMContentLoaded', resolve);
             } else {
                 resolve();
             }
         });
     }
 
-    _initTelegram() {
-        try {
-            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-                Telegram.WebApp.ready();
-                try { Telegram.WebApp.expand(); } catch (e) { /* ignore */ }
-                const scheme = Telegram.WebApp.colorScheme || CONFIG.DEFAULT_THEME;
-                this.uiEngine.saveTheme(scheme);
-                this.uiEngine.applyTheme();
-                console.log('Telegram WebApp detected');
-            } else {
-                console.log('Telegram WebApp не обнаружен — запущено в браузере');
+    async initTelegram() {
+        return new Promise((resolve) => {
+            try {
+                if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+                    Telegram.WebApp.ready();
+                    Telegram.WebApp.expand();
+
+                    const theme = Telegram.WebApp.colorScheme || CONFIG.DEFAULT_THEME;
+                    document.documentElement.setAttribute('data-theme', theme);
+                    console.log('🤖 Telegram WebApp готов, тема:', theme);
+                } else {
+                    console.log('Запуск вне Telegram WebApp (браузерный режим)');
+                }
+            } catch (err) {
+                console.warn('Ошибка Telegram WebApp init', err);
+            } finally {
+                resolve();
             }
-        } catch (e) {
-            console.warn('Ошибка инициализации Telegram WebApp', e);
-        }
+        });
     }
 }
 
-// Старт приложения
+// Запускаем приложение
 const app = new HabitCraftApp();
-app.init().catch(err => console.error(err));
+app.init().catch(console.error);
 
-// Экспортируем для отладки в консоли, если нужно
 export default app;
