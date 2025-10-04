@@ -1,58 +1,77 @@
-// Storage Manager
-class StorageManager {
+// modules/storage.js — менеджер локального хранилища
+// Экспортируется класс StorageManager
+
+export class StorageManager {
     constructor() {
-        this.userId = this.getUserId();
-        console.log('📦 StorageManager initialized for user:', this.userId);
+        // Получаем идентификатор пользователя (если в Telegram WebApp — используем id телеграм-пользователя)
+        this.userId = this._deriveUserId();
     }
 
-    getUserId() {
-        if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user?.id) {
-            return 'tg-' + Telegram.WebApp.initDataUnsafe.user.id.toString();
+    // Получение userId: prefer Telegram WebApp initDataUnsafe, fallback to local-user
+    _deriveUserId() {
+        try {
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user?.id) {
+                return `tg-${Telegram.WebApp.initDataUnsafe.user.id}`;
+            }
+        } catch (e) {
+            // игнорируем
         }
+        // fallback
         return 'local-user';
     }
 
-    getStorageKey(key) {
-        return `habitcraft-${this.userId}-${key}`;
+    // Формируем ключ для локального хранилища
+    _key(key) {
+        return `habitcraft:${this.userId}:${key}`;
     }
 
+    // Запись — всегда возвращает true/false
     setItem(key, value) {
         try {
-            const storageKey = this.getStorageKey(key);
-            localStorage.setItem(storageKey, JSON.stringify(value));
-            console.log('💾 Saved:', key, value);
+            const payload = JSON.stringify(value);
+            localStorage.setItem(this._key(key), payload);
             return true;
-        } catch (error) {
-            console.error('❌ Storage set error:', error);
+        } catch (err) {
+            console.error('Storage setItem error', err);
             return false;
         }
     }
 
+    // Чтение — возвращает распарсенный объект или null
     getItem(key) {
         try {
-            const storageKey = this.getStorageKey(key);
-            const data = localStorage.getItem(storageKey);
-            const result = data ? JSON.parse(data) : null;
-            console.log('📂 Loaded:', key, result);
-            return result;
-        } catch (error) {
-            console.error('❌ Storage get error:', error);
+            const raw = localStorage.getItem(this._key(key));
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            console.error('Storage getItem error', err);
             return null;
         }
     }
 
     removeItem(key) {
         try {
-            const storageKey = this.getStorageKey(key);
-            localStorage.removeItem(storageKey);
-            console.log('🗑️ Removed:', key);
+            localStorage.removeItem(this._key(key));
             return true;
-        } catch (error) {
-            console.error('❌ Storage remove error:', error);
+        } catch (err) {
+            console.error('Storage removeItem error', err);
+            return false;
+        }
+    }
+
+    // Утилита: очищает всё приложение-специфичное хранилище (для dev)
+    clearAll() {
+        try {
+            Object.keys(localStorage).forEach(k => {
+                if (k.startsWith(`habitcraft:${this.userId}:`)) {
+                    localStorage.removeItem(k);
+                }
+            });
+            return true;
+        } catch (err) {
+            console.error('Storage clearAll error', err);
             return false;
         }
     }
 }
 
-window.StorageManager = StorageManager;
-console.log('✅ Storage module loaded');
+export default StorageManager;

@@ -1,99 +1,73 @@
-// Main Application
+// app.js — главный модуль приложения
+// Импортируем модули как ES-модули
+
+import { CONFIG } from './config.js';
+import StorageManager from './modules/storage.js';
+import HabitManager from './modules/habit-manager.js';
+import AICoach from './modules/ai-coach.js';
+import UIEngine from './modules/ui-engine.js';
+
+// Обёртка инициализации приложения
 class HabitCraftApp {
     constructor() {
-        this.isInitialized = false;
-        console.log('🚀 HabitCraftApp constructor called');
+        this.storage = null;
+        this.habitManager = null;
+        this.aiCoach = null;
+        this.uiEngine = null;
     }
 
     async init() {
         try {
-            console.log('🎯 Starting HabitCraft AI initialization...');
-            
-            // Wait for DOM to be fully ready
-            await this.waitForDOM();
-            console.log('✅ DOM is ready');
-            
-            // Initialize core components
-            console.log('🔄 Initializing core components...');
+            await this._waitForDOM();
+
             this.storage = new StorageManager();
             this.habitManager = new HabitManager();
             this.aiCoach = new AICoach();
             this.uiEngine = new UIEngine(this.habitManager, this.aiCoach);
 
-            // Initialize UI Engine
-            console.log('🔄 Initializing UI Engine...');
+            // Инициализация UI
             this.uiEngine.init();
 
-            // Initialize Telegram Web App
-            console.log('🔄 Initializing Telegram WebApp...');
-            this.initTelegram();
+            // Инициализация Telegram WebApp (если доступно)
+            this._initTelegram();
 
-            this.isInitialized = true;
-            console.log('🎉 HabitCraft AI initialized successfully!');
-            
-        } catch (error) {
-            console.error('💥 Failed to initialize HabitCraft AI:', error);
+            console.log('✅ HabitCraft AI инициализирован');
+        } catch (err) {
+            console.error('Ошибка инициализации приложения', err);
         }
     }
 
-    waitForDOM() {
+    _waitForDOM() {
         return new Promise((resolve) => {
             if (document.readyState === 'loading') {
-                console.log('⏳ Waiting for DOM content loaded...');
-                document.addEventListener('DOMContentLoaded', resolve);
+                document.addEventListener('DOMContentLoaded', () => resolve());
             } else {
-                console.log('⚡ DOM already ready');
                 resolve();
             }
         });
     }
 
-    initTelegram() {
-        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
-            try {
+    _initTelegram() {
+        try {
+            if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
                 Telegram.WebApp.ready();
-                Telegram.WebApp.expand();
-                console.log('✅ Telegram WebApp initialized successfully');
-                
-                // Set theme based on Telegram
-                const theme = Telegram.WebApp.colorScheme;
-                this.uiEngine.saveTheme(theme);
+                try { Telegram.WebApp.expand(); } catch (e) { /* ignore */ }
+                const scheme = Telegram.WebApp.colorScheme || CONFIG.DEFAULT_THEME;
+                this.uiEngine.saveTheme(scheme);
                 this.uiEngine.applyTheme();
-                console.log('🎨 Telegram theme applied:', theme);
-                
-            } catch (error) {
-                console.warn('⚠️ Telegram Web App initialization failed:', error);
+                console.log('Telegram WebApp detected');
+            } else {
+                console.log('Telegram WebApp не обнаружен — запущено в браузере');
             }
-        } else {
-            console.log('ℹ️ Telegram WebApp not detected, running in standalone mode');
+        } catch (e) {
+            console.warn('Ошибка инициализации Telegram WebApp', e);
         }
     }
 }
 
-// Global error handler
-window.addEventListener('error', (event) => {
-    console.error('💥 Global error:', event.error);
-});
+// Старт приложения
+const app = new HabitCraftApp();
+app.init().catch(err => console.error(err));
 
-window.addEventListener('unhandledrejection', (event) => {
-    console.error('💥 Unhandled promise rejection:', event.reason);
-});
-
-// Initialize the application when DOM is loaded
-console.log('🎬 Starting HabitCraft AI application...');
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('📄 DOMContentLoaded event fired');
-    window.habitCraftApp = new HabitCraftApp();
-    window.habitCraftApp.init().catch(error => {
-        console.error('💥 App initialization failed:', error);
-    });
-});
-
-// Fallback initialization for cases where DOMContentLoaded already fired
-if (document.readyState !== 'loading') {
-    console.log('⚡ DOM already ready, initializing immediately');
-    window.habitCraftApp = new HabitCraftApp();
-    window.habitCraftApp.init().catch(error => {
-        console.error('💥 App initialization failed:', error);
-    });
-}
+// Экспортируем для отладки в консоли, если нужно
+export default app;

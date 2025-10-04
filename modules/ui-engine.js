@@ -1,490 +1,382 @@
-// UI Engine
-class UIEngine {
+// modules/ui-engine.js — интерфейс приложения, связывает HabitManager и AICoach с DOM
+// Экспортируем класс UIEngine
+
+import StorageManager from './storage.js';
+import { CONFIG } from '../config.js';
+
+export class UIEngine {
     constructor(habitManager, aiCoach) {
         this.habitManager = habitManager;
         this.aiCoach = aiCoach;
-        this.currentTheme = this.loadTheme();
+        this.storage = new StorageManager();
+        this.currentTheme = this._loadTheme();
         this.currentAISuggestion = null;
-        console.log('🎨 UIEngine initialized');
+        // кэш элементов
+        this.elements = {};
     }
 
     init() {
-        console.log('🚀 Initializing UI...');
+        // находим элементы по id и при необходимости пропускаем отсутствующие
+        this._cacheElements();
         this.applyTheme();
-        this.setupEventListeners();
+        this._bindUIActions();
         this.render();
-        console.log('✅ UI initialized successfully');
     }
 
-    loadTheme() {
-        const saved = new StorageManager().getItem('theme');
-        const theme = saved || CONFIG.DEFAULT_THEME;
-        console.log('🎨 Theme loaded:', theme);
-        return theme;
+    // Кэширование часто используемых элементов (с проверками)
+    _cacheElements() {
+        const ids = [
+            'theme-toggle','today-date','today-habits','daily-progress-fill','daily-progress-text',
+            'add-habit-btn','create-first-habit','add-habit-modal','close-modal','cancel-habit','save-habit',
+            'habit-name','habit-description','ai-habit-description','generate-with-ai','ai-loading-spinner','generate-text',
+            'ai-suggestion','suggestion-name','suggestion-description','suggestion-color','suggestion-frequency','use-suggestion',
+            'ai-input','ai-send-btn','ai-response','ai-credits','view-all-stats','stats-modal','close-stats','calendar-view','habits-stats',
+            'color-picker','frequency-selector','today-date','empty-state','main-content'
+        ];
+        ids.forEach(id => {
+            this.elements[id] = document.getElementById(id) || null;
+        });
+    }
+
+    // Тема: грузим/сохраняем
+    _loadTheme() {
+        const saved = this.storage.getItem(CONFIG.STORAGE_KEYS.THEME);
+        return saved || CONFIG.DEFAULT_THEME;
     }
 
     saveTheme(theme) {
         this.currentTheme = theme;
-        new StorageManager().setItem('theme', theme);
-        console.log('💾 Theme saved:', theme);
+        this.storage.setItem(CONFIG.STORAGE_KEYS.THEME, theme);
     }
 
     toggleTheme() {
         const newTheme = this.currentTheme === 'light' ? 'dark' : 'light';
-        console.log('🌙 Toggling theme to:', newTheme);
         this.saveTheme(newTheme);
         this.applyTheme();
     }
 
     applyTheme() {
-        document.documentElement.setAttribute('data-theme', this.currentTheme);
-        const themeIcon = document.querySelector('.theme-icon');
-        if (themeIcon) {
-            themeIcon.textContent = this.currentTheme === 'light' ? '🌙' : '☀️';
-        }
-        console.log('🎨 Theme applied:', this.currentTheme);
+        try {
+            document.documentElement.setAttribute('data-theme', this.currentTheme);
+            const icon = document.querySelector('.theme-icon');
+            if (icon) icon.textContent = this.currentTheme === 'light' ? '🌙' : '☀️';
+        } catch (e) { /* ignore */ }
     }
 
-    setupEventListeners() {
-        console.log('🔧 Setting up event listeners...');
-        
+    // Навешиваем обработчики (с проверкой наличия элементов)
+    _bindUIActions() {
         // Theme toggle
-        document.getElementById('theme-toggle').addEventListener('click', () => {
-            console.log('🎨 Theme button clicked');
-            this.toggleTheme();
-        });
-        
-        // Add habit buttons
-        document.getElementById('add-habit-btn').addEventListener('click', () => {
-            console.log('➕ Add habit button clicked');
-            this.openAddHabitModal();
-        });
-        
-        document.getElementById('create-first-habit').addEventListener('click', () => {
-            console.log('🚀 Create first habit button clicked');
-            this.openAddHabitModal();
-        });
-        
+        if (this.elements['theme-toggle']) {
+            this.elements['theme-toggle'].addEventListener('click', () => this.toggleTheme());
+        }
+
+        // Open add habit
+        if (this.elements['add-habit-btn']) {
+            this.elements['add-habit-btn'].addEventListener('click', () => this.openAddHabitModal());
+        }
+        if (this.elements['create-first-habit']) {
+            this.elements['create-first-habit'].addEventListener('click', () => this.openAddHabitModal());
+        }
+
         // Modal controls
-        document.getElementById('close-modal').addEventListener('click', () => {
-            console.log('❌ Close modal clicked');
-            this.closeModals();
-        });
-        
-        document.getElementById('cancel-habit').addEventListener('click', () => {
-            console.log('❌ Cancel habit clicked');
-            this.closeModals();
-        });
-        
-        document.getElementById('close-stats').addEventListener('click', () => {
-            console.log('❌ Close stats clicked');
-            this.closeModals();
-        });
-        
-        document.getElementById('save-habit').addEventListener('click', () => {
-            console.log('💾 Save habit clicked');
-            this.saveHabit();
-        });
-        
-        // AI generation
-        document.getElementById('generate-with-ai').addEventListener('click', () => {
-            console.log('🤖 Generate with AI clicked');
-            this.generateHabitWithAI();
-        });
-        
-        document.getElementById('use-suggestion').addEventListener('click', () => {
-            console.log('✅ Use suggestion clicked');
-            this.useAISuggestion();
-        });
-        
+        if (this.elements['close-modal']) this.elements['close-modal'].addEventListener('click', () => this.closeModals());
+        if (this.elements['cancel-habit']) this.elements['cancel-habit'].addEventListener('click', () => this.closeModals());
+        if (this.elements['save-habit']) this.elements['save-habit'].addEventListener('click', () => this.saveHabit());
+
+        // Generate with AI
+        if (this.elements['generate-with-ai']) {
+            this.elements['generate-with-ai'].addEventListener('click', () => this.generateHabitWithAI());
+        }
+        if (this.elements['use-suggestion']) {
+            this.elements['use-suggestion'].addEventListener('click', () => this.useAISuggestion());
+        }
+
         // AI chat
-        document.getElementById('ai-send-btn').addEventListener('click', () => {
-            console.log('➤ AI send clicked');
-            this.sendAIMessage();
+        if (this.elements['ai-send-btn'] && this.elements['ai-input']) {
+            this.elements['ai-send-btn'].addEventListener('click', () => this.sendAIMessage());
+            this.elements['ai-input'].addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.sendAIMessage();
+            });
+        }
+
+        // Stats modal
+        if (this.elements['view-all-stats']) this.elements['view-all-stats'].addEventListener('click', () => this.openStatsModal());
+        if (this.elements['close-stats']) this.elements['close-stats'].addEventListener('click', () => this.closeModals());
+
+        // Modal overlay clicks - закрытие при клике вне модалки
+        const overlays = document.querySelectorAll('.modal-overlay');
+        overlays.forEach(overlay => {
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) this.closeModals();
+            });
         });
-        
-        document.getElementById('ai-input').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                console.log('↩️ AI input enter pressed');
-                this.sendAIMessage();
-            }
-        });
-        
-        // Stats view
-        document.getElementById('view-all-stats').addEventListener('click', () => {
-            console.log('📊 View all stats clicked');
-            this.openStatsModal();
-        });
-        
-        // Modal overlay close
-        document.getElementById('add-habit-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'add-habit-modal') {
-                console.log('🎯 Modal overlay clicked');
-                this.closeModals();
-            }
-        });
-        
-        document.getElementById('stats-modal').addEventListener('click', (e) => {
-            if (e.target.id === 'stats-modal') {
-                console.log('🎯 Stats modal overlay clicked');
-                this.closeModals();
-            }
-        });
-        
-        // Tabs
-        this.setupTabs();
-        
-        // Color picker and frequency selector
-        this.setupFormControls();
-        
-        console.log('✅ Event listeners setup complete');
+
+        // Tabs и form controls
+        this._setupTabsAndControls();
+
+        // Делегирование кликов по списку привычек (checkbox / delete / stats)
+        const habitsContainer = this.elements['today-habits'];
+        if (habitsContainer) {
+            habitsContainer.addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-action]');
+                if (!btn) return;
+                const action = btn.getAttribute('data-action');
+                const id = btn.getAttribute('data-habit-id');
+                if (!action || !id) return;
+                if (action === 'toggle') {
+                    this.toggleHabitCompletion(id);
+                } else if (action === 'delete') {
+                    this.deleteHabit(id);
+                } else if (action === 'stats') {
+                    const habit = this.habitManager.habits.find(h => h.id === id);
+                    if (habit) this.showHabitStats(habit);
+                }
+            });
+        }
     }
 
-    setupTabs() {
-        console.log('📑 Setting up tabs...');
-        const tabs = document.querySelectorAll('.tab');
-        tabs.forEach(tab => {
+    _setupTabsAndControls() {
+        // Tabs
+        document.querySelectorAll('.tab').forEach(tab => {
             tab.addEventListener('click', () => {
                 const tabName = tab.getAttribute('data-tab');
-                console.log('📑 Tab clicked:', tabName);
-                this.switchTab(tabName);
+                document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t === tab));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === `${tabName}-tab`));
             });
         });
-    }
 
-    setupFormControls() {
-        console.log('🎛️ Setting up form controls...');
-        
         // Color picker
-        document.querySelectorAll('.color-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                console.log('🎨 Color selected:', e.target.getAttribute('data-color'));
-                document.querySelectorAll('.color-option').forEach(opt => {
-                    opt.classList.remove('selected');
-                });
-                e.target.classList.add('selected');
+        document.querySelectorAll('.color-option').forEach(opt => {
+            opt.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-option').forEach(o => o.classList.remove('selected'));
+                opt.classList.add('selected');
             });
         });
-        
+
         // Frequency selector
         document.querySelectorAll('.frequency-btn').forEach(btn => {
             btn.addEventListener('click', (e) => {
-                const frequency = e.target.getAttribute('data-frequency');
-                console.log('📅 Frequency selected:', frequency);
-                document.querySelectorAll('.frequency-btn').forEach(b => {
-                    b.classList.remove('active');
-                });
-                e.target.classList.add('active');
+                document.querySelectorAll('.frequency-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
             });
         });
     }
 
-    switchTab(tabName) {
-        console.log('🔄 Switching to tab:', tabName);
-        document.querySelectorAll('.tab').forEach(tab => {
-            tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
-        });
-        
-        document.querySelectorAll('.tab-content').forEach(content => {
-            content.classList.toggle('active', content.id === `${tabName}-tab`);
-        });
-    }
-
+    // Рендер всего интерфейса
     render() {
-        console.log('🔄 Rendering UI...');
-        this.renderTodayDate();
-        this.renderHabits();
-        this.renderStats();
-        this.renderAIStatus();
-        this.checkEmptyState();
-        console.log('✅ UI rendered');
+        this._renderTodayDate();
+        this._renderHabits();
+        this._renderStats();
+        this._renderAIStatus();
+        this._checkEmptyState();
     }
 
-    renderTodayDate() {
+    _renderTodayDate() {
+        const el = this.elements['today-date'];
+        if (!el) return;
         const today = new Date();
-        const options = { 
-            weekday: 'long', 
-            year: 'numeric', 
-            month: 'long', 
-            day: 'numeric' 
-        };
-        const dateString = today.toLocaleDateString('ru-RU', options);
-        document.getElementById('today-date').textContent = dateString;
-        console.log('📅 Today date rendered:', dateString);
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        el.textContent = today.toLocaleDateString('ru-RU', options);
     }
 
-    renderHabits() {
-        const container = document.getElementById('today-habits');
+    _renderHabits() {
+        const container = this.elements['today-habits'];
+        if (!container) return;
         const habits = this.habitManager.getTodayHabits();
-        
-        console.log('📋 Rendering habits:', habits.length);
         container.innerHTML = '';
 
-        if (habits.length === 0) {
-            container.innerHTML = '<div class="text-center" style="color: var(--text-secondary); padding: var(--space-xl);">Нет привычек на сегодня</div>';
-            this.updateDailyProgress();
+        if (!habits.length) {
+            container.innerHTML = `<div class="text-center" style="color: var(--text-secondary); padding: var(--space-xl);">Нет привычек на сегодня</div>`;
+            this._updateDailyProgress();
             return;
         }
 
-        habits.forEach(habit => {
-            const habitElement = this.createHabitElement(habit);
-            container.appendChild(habitElement);
-        });
-
-        this.updateDailyProgress();
-    }
-
-    createHabitElement(habit) {
-        const div = document.createElement('div');
-        const isCompleted = this.habitManager.isHabitCompletedToday(habit.id);
-        div.className = `habit-card ${isCompleted ? 'completed' : ''}`;
-        div.style.borderLeft = `4px solid ${habit.color}`;
-
-        const stats = this.habitManager.getHabitStats(habit.id);
-
-        div.innerHTML = `
-            <div class="habit-header">
-                <div class="habit-name">${this.escapeHtml(habit.name)}</div>
-                <div class="habit-actions">
-                    <button class="icon-btn stats-btn" data-habit-id="${habit.id}">📊</button>
-                    <button class="icon-btn delete-btn" data-habit-id="${habit.id}">🗑️</button>
-                </div>
-            </div>
-            <div class="habit-description">${this.escapeHtml(habit.description)}</div>
-            <div class="habit-progress">
-                <div class="habit-checkbox ${isCompleted ? 'checked' : ''}" data-habit-id="${habit.id}"></div>
-                <div class="habit-stats">
-                    <div class="streak-counter">
-                        <span>🔥</span>
-                        <span>${stats.streak} дн.</span>
+        habits.forEach(h => {
+            const isCompleted = this.habitManager.isHabitCompletedToday(h.id);
+            const stats = this.habitManager.getHabitStats(h.id);
+            const card = document.createElement('div');
+            card.className = `habit-card ${isCompleted ? 'completed' : ''}`;
+            card.style.borderLeft = `4px solid ${h.color || '#4CAF50'}`;
+            card.innerHTML = `
+                <div class="habit-header">
+                    <div class="habit-name">${this._escape(h.name)}</div>
+                    <div class="habit-actions">
+                        <button class="icon-btn" data-action="stats" data-habit-id="${h.id}" title="Статистика">📊</button>
+                        <button class="icon-btn" data-action="delete" data-habit-id="${h.id}" title="Удалить">🗑️</button>
                     </div>
-                    <div class="completion-rate">${stats.completionRate}% выполнено</div>
                 </div>
-            </div>
-        `;
-
-        // Add event listeners
-        const checkbox = div.querySelector('.habit-checkbox');
-        checkbox.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('☑️ Habit checkbox clicked:', habit.id);
-            this.toggleHabitCompletion(habit.id);
+                <div class="habit-description">${this._escape(h.description || '')}</div>
+                <div class="habit-progress">
+                    <button class="habit-checkbox ${isCompleted ? 'checked' : ''}" data-action="toggle" data-habit-id="${h.id}" aria-pressed="${isCompleted ? 'true' : 'false'}"></button>
+                    <div class="habit-stats">
+                        <div class="streak-counter"><span>🔥</span><span>${stats?.streak || 0} дн.</span></div>
+                        <div class="completion-rate">${stats?.completionRate || 0}% выполнено</div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
         });
 
-        const statsBtn = div.querySelector('.stats-btn');
-        statsBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('📊 Habit stats clicked:', habit.id);
-            this.showHabitStats(habit);
-        });
-
-        const deleteBtn = div.querySelector('.delete-btn');
-        deleteBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            console.log('🗑️ Delete habit clicked:', habit.id);
-            this.deleteHabit(habit.id);
-        });
-
-        console.log('✅ Habit element created:', habit.id);
-        return div;
+        this._updateDailyProgress();
     }
 
-    toggleHabitCompletion(habitId) {
-        console.log('🔄 Toggling habit completion:', habitId);
-        const completed = this.habitManager.toggleHabitCompletion(habitId);
-        
-        if (completed) {
-            console.log('🎉 Habit completed, showing celebration');
-            this.showCelebration();
-        }
-        
-        this.render();
+    _renderStats() {
+        const s = this.habitManager.getOverallStats();
+        this._safeSetText('total-habits', s.totalHabits);
+        this._safeSetText('completion-rate', (s.overallCompletionRate || 0) + '%');
+        this._safeSetText('current-streak', s.longestStreak || 0);
     }
 
-    showCelebration() {
-        const celebration = document.createElement('div');
-        celebration.style.cssText = `
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            z-index: 1001;
-            pointer-events: none;
-            animation: celebrate 1s ease-out;
-        `;
-        celebration.textContent = '🎉';
-        document.body.appendChild(celebration);
-        
-        setTimeout(() => {
-            celebration.remove();
-        }, 1000);
+    _renderAIStatus() {
+        const el = this.elements['ai-credits'];
+        if (!el) return;
+        const usage = this.aiCoach.getUsageStats();
+        el.textContent = `${usage.remainingToday} запросов осталось`;
     }
 
-    deleteHabit(habitId) {
-        if (confirm('Удалить эту привычку? Это действие нельзя отменить.')) {
-            console.log('🗑️ Deleting habit:', habitId);
-            this.habitManager.deleteHabit(habitId);
-            this.render();
-            this.showNotification('Привычка удалена');
-        }
-    }
-
-    renderStats() {
-        const stats = this.habitManager.getOverallStats();
-        document.getElementById('total-habits').textContent = stats.totalHabits;
-        document.getElementById('completion-rate').textContent = stats.overallCompletionRate + '%';
-        document.getElementById('current-streak').textContent = stats.longestStreak;
-        console.log('📊 Stats rendered');
-    }
-
-    updateDailyProgress() {
+    _updateDailyProgress() {
+        const fill = this.elements['daily-progress-fill'];
+        const text = this.elements['daily-progress-text'];
         const habits = this.habitManager.getTodayHabits();
-        if (habits.length === 0) {
-            document.getElementById('daily-progress-fill').style.width = '0%';
-            document.getElementById('daily-progress-text').textContent = '0% выполнено';
+        if (!fill || !text) return;
+
+        if (!habits.length) {
+            fill.style.width = '0%';
+            text.textContent = '0% выполнено';
             return;
         }
-
-        const completed = habits.filter(habit => 
-            this.habitManager.isHabitCompletedToday(habit.id)
-        ).length;
-
-        const percentage = Math.round((completed / habits.length) * 100);
-        document.getElementById('daily-progress-fill').style.width = percentage + '%';
-        document.getElementById('daily-progress-text').textContent = percentage + '% выполнено';
-        console.log('📈 Daily progress updated:', percentage + '%');
-    }
-
-    renderAIStatus() {
-        const usage = this.aiCoach.getUsageStats();
-        document.getElementById('ai-credits').textContent = `${usage.remainingToday} запросов осталось`;
-        console.log('🤖 AI status rendered');
-    }
-
-    checkEmptyState() {
-        const emptyState = document.getElementById('empty-state');
-        const mainContent = document.getElementById('main-content');
-        
-        if (this.habitManager.habits.length === 0) {
-            emptyState.classList.add('active');
-            mainContent.style.display = 'none';
-            console.log('🌟 Empty state shown');
-        } else {
-            emptyState.classList.remove('active');
-            mainContent.style.display = 'block';
-            console.log('📱 Main content shown');
-        }
+        const completed = habits.filter(h => this.habitManager.isHabitCompletedToday(h.id)).length;
+        const percent = Math.round((completed / habits.length) * 100);
+        fill.style.width = `${percent}%`;
+        text.textContent = `${percent}% выполнено`;
     }
 
     openAddHabitModal() {
-        console.log('📝 Opening add habit modal');
-        document.getElementById('add-habit-modal').classList.add('active');
-        this.switchTab('manual');
-        document.getElementById('habit-name').value = '';
-        document.getElementById('habit-description').value = '';
-        document.getElementById('ai-habit-description').value = '';
-        document.getElementById('ai-suggestion').style.display = 'none';
-        
-        // Reset form controls
-        document.querySelectorAll('.color-option').forEach(opt => {
-            opt.classList.remove('selected');
-        });
-        document.querySelector('.color-option').classList.add('selected');
-        
-        document.querySelectorAll('.frequency-btn').forEach(btn => {
-            btn.classList.remove('active');
-        });
-        document.querySelector('.frequency-btn').classList.add('active');
+        const modal = this.elements['add-habit-modal'];
+        if (!modal) return;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
+        // сброс полей
+        this._resetAddHabitForm();
+        // открываем вкладку вручную
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'manual'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'manual-tab'));
     }
 
     closeModals() {
-        console.log('🔒 Closing all modals');
-        document.querySelectorAll('.modal-overlay').forEach(modal => {
-            modal.classList.remove('active');
+        document.querySelectorAll('.modal-overlay').forEach(m => {
+            m.classList.remove('active');
+            m.setAttribute('aria-hidden', 'true');
         });
     }
 
+    _resetAddHabitForm() {
+        const name = this.elements['habit-name'];
+        const desc = this.elements['habit-description'];
+        const aiDesc = this.elements['ai-habit-description'];
+        if (name) name.value = '';
+        if (desc) desc.value = '';
+        if (aiDesc) aiDesc.value = '';
+        document.querySelectorAll('.color-option').forEach((o, i) => {
+            o.classList.toggle('selected', i === 0);
+        });
+        document.querySelectorAll('.frequency-btn').forEach((b, i) => {
+            b.classList.toggle('active', i === 0);
+        });
+        const aiSug = this.elements['ai-suggestion'];
+        if (aiSug) aiSug.style.display = 'none';
+    }
+
     async generateHabitWithAI() {
-        const description = document.getElementById('ai-habit-description').value.trim();
-        console.log('🤖 Generating habit with AI description:', description);
-        
-        if (!description) {
-            this.showNotification('Введите описание привычки');
+        const descEl = this.elements['ai-habit-description'];
+        if (!descEl) return;
+        const text = descEl.value.trim();
+        if (!text) {
+            this.showNotification('Введите описание привычки для генерации');
             return;
         }
 
-        const generateBtn = document.getElementById('generate-with-ai');
-        const spinner = document.getElementById('ai-loading-spinner');
+        const btn = this.elements['generate-with-ai'];
+        const spinner = this.elements['ai-loading-spinner'];
         const generateText = document.getElementById('generate-text');
 
-        generateBtn.disabled = true;
-        spinner.style.display = 'inline-block';
-        generateText.textContent = 'Генерация...';
+        if (btn) btn.disabled = true;
+        if (spinner) spinner.style.display = 'inline-block';
+        if (generateText) generateText.textContent = 'Генерация...';
 
         try {
-            const habitSuggestion = await this.aiCoach.generateHabit(description);
-            this.displayAISuggestion(habitSuggestion);
-        } catch (error) {
-            if (error.message === 'DAILY_LIMIT_REACHED') {
+            const suggestion = await this.aiCoach.generateHabit(text);
+            // suggestion может быть объектом или строкой (mock)
+            this.displayAISuggestion(suggestion);
+        } catch (err) {
+            if (err.message === 'DAILY_LIMIT_REACHED') {
                 this.showNotification('Достигнут дневной лимит AI запросов');
             } else {
-                this.showNotification('Ошибка генерации. Попробуйте позже.');
+                console.error('generateHabitWithAI error', err);
+                this.showNotification('Ошибка генерации. Попробуйте позже');
             }
         } finally {
-            generateBtn.disabled = false;
-            spinner.style.display = 'none';
-            generateText.textContent = 'Сгенерировать с AI';
+            if (btn) btn.disabled = false;
+            if (spinner) spinner.style.display = 'none';
+            if (generateText) generateText.textContent = 'Сгенерировать с AI';
         }
     }
 
     displayAISuggestion(suggestion) {
-        console.log('💡 Displaying AI suggestion:', suggestion);
-        document.getElementById('suggestion-name').textContent = suggestion.name;
-        document.getElementById('suggestion-description').textContent = suggestion.description;
-        
-        const colorBadge = document.getElementById('suggestion-color');
-        colorBadge.style.backgroundColor = suggestion.color;
-        colorBadge.textContent = this.getColorName(suggestion.color);
-        
-        document.getElementById('suggestion-frequency').textContent = this.getFrequencyText(suggestion.frequency);
-        document.getElementById('ai-suggestion').style.display = 'block';
-        
+        const el = this.elements['ai-suggestion'];
+        if (!el || !suggestion) return;
+        const name = document.getElementById('suggestion-name');
+        const desc = document.getElementById('suggestion-description');
+        const color = document.getElementById('suggestion-color');
+        const freq = document.getElementById('suggestion-frequency');
+
+        name.textContent = suggestion.name || 'Предложение';
+        desc.textContent = suggestion.description || '';
+        if (color) {
+            color.style.backgroundColor = suggestion.color || '#4CAF50';
+        }
+        if (freq) {
+            freq.textContent = this._frequencyText(suggestion.frequency);
+        }
+        el.style.display = 'block';
         this.currentAISuggestion = suggestion;
     }
 
     useAISuggestion() {
         if (!this.currentAISuggestion) return;
+        // переключаем на ручной таб и заполняем поля
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.getAttribute('data-tab') === 'manual'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'manual-tab'));
 
-        console.log('✅ Using AI suggestion:', this.currentAISuggestion);
-        this.switchTab('manual');
-        document.getElementById('habit-name').value = this.currentAISuggestion.name;
-        document.getElementById('habit-description').value = this.currentAISuggestion.description;
-        
+        const nameEl = this.elements['habit-name'];
+        const descEl = this.elements['habit-description'];
+
+        if (nameEl) nameEl.value = this.currentAISuggestion.name || '';
+        if (descEl) descEl.value = this.currentAISuggestion.description || '';
+
+        // color
         document.querySelectorAll('.color-option').forEach(opt => {
-            opt.classList.remove('selected');
             if (opt.getAttribute('data-color') === this.currentAISuggestion.color) {
                 opt.classList.add('selected');
-            }
+            } else opt.classList.remove('selected');
         });
-        
+
+        // frequency
         document.querySelectorAll('.frequency-btn').forEach(btn => {
-            btn.classList.remove('active');
-            if (btn.getAttribute('data-frequency') === this.currentAISuggestion.frequency) {
-                btn.classList.add('active');
-            }
+            btn.classList.toggle('active', btn.getAttribute('data-frequency') === this.currentAISuggestion.frequency);
         });
 
         this.showNotification('AI предложение применено');
     }
 
     saveHabit() {
-        const name = document.getElementById('habit-name').value.trim();
-        const description = document.getElementById('habit-description').value.trim();
-        const selectedColor = document.querySelector('.color-option.selected')?.getAttribute('data-color');
-        const selectedFrequency = document.querySelector('.frequency-btn.active')?.getAttribute('data-frequency');
+        const nameEl = this.elements['habit-name'];
+        const descEl = this.elements['habit-description'];
+        const selectedColor = document.querySelector('.color-option.selected')?.getAttribute('data-color') || '#4CAF50';
+        const selectedFrequency = document.querySelector('.frequency-btn.active')?.getAttribute('data-frequency') || 'daily';
 
-        console.log('💾 Saving habit:', { name, description, selectedColor, selectedFrequency });
+        const name = nameEl?.value?.trim();
+        const description = descEl?.value?.trim() || '';
 
         if (!name) {
             this.showNotification('Введите название привычки');
@@ -498,178 +390,206 @@ class UIEngine {
                 color: selectedColor,
                 frequency: selectedFrequency
             });
-
             this.closeModals();
             this.render();
             this.showNotification('Привычка создана! 🎉');
-        } catch (error) {
-            this.showNotification(error.message);
+        } catch (err) {
+            this.showNotification(err.message || 'Ошибка при сохранении привычки');
         }
     }
 
     async sendAIMessage() {
-        const input = document.getElementById('ai-input');
+        const input = this.elements['ai-input'];
+        const responseDiv = this.elements['ai-response'];
+        const sendBtn = this.elements['ai-send-btn'];
+
+        if (!input || !responseDiv) return;
         const message = input.value.trim();
-        
-        console.log('🤖 Sending AI message:', message);
-        
         if (!message) return;
 
-        const responseDiv = document.getElementById('ai-response');
-        const sendBtn = document.getElementById('ai-send-btn');
-
+        // UI: загрузка
         responseDiv.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div>';
         input.disabled = true;
-        sendBtn.disabled = true;
+        if (sendBtn) sendBtn.disabled = true;
 
         try {
             const context = {
                 habits: this.habitManager.habits.length,
                 streak: this.habitManager.getOverallStats().longestStreak
             };
-
-            const response = await this.aiCoach.getAdvice(message, context);
-            
+            const answer = await this.aiCoach.getAdvice(message, context);
             responseDiv.innerHTML = `
                 <div style="padding: var(--space-sm);">
                     <div style="font-weight: 500; margin-bottom: var(--space-sm); color: var(--primary);">AI Коуч:</div>
-                    <div>${this.escapeHtml(response)}</div>
+                    <div>${this._escape(answer)}</div>
                 </div>
             `;
-            
             input.value = '';
-            this.renderAIStatus();
-        } catch (error) {
-            if (error.message === 'DAILY_LIMIT_REACHED') {
-                responseDiv.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">Достигнут дневной лимит запросов. Попробуйте завтра!</div>';
+            this._renderAIStatus();
+        } catch (err) {
+            if (err.message === 'DAILY_LIMIT_REACHED') {
+                responseDiv.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px">Достигнут дневной лимит запросов. Попробуйте завтра.</div>';
             } else {
-                responseDiv.innerHTML = '<div style="text-align: center; color: var(--text-secondary); padding: 20px;">Ошибка соединения с AI. Попробуйте позже.</div>';
+                responseDiv.innerHTML = '<div style="text-align:center;color:var(--text-secondary);padding:20px">Ошибка соединения с AI. Попробуйте позже.</div>';
             }
         } finally {
             input.disabled = false;
-            sendBtn.disabled = false;
+            if (sendBtn) sendBtn.disabled = false;
             input.focus();
         }
     }
 
+    // Открываем подробную статистику
     openStatsModal() {
-        console.log('📊 Opening stats modal');
-        document.getElementById('stats-modal').classList.add('active');
+        const modal = this.elements['stats-modal'];
+        if (!modal) return;
+        modal.classList.add('active');
+        modal.setAttribute('aria-hidden', 'false');
         this.renderDetailedStats();
     }
 
     renderDetailedStats() {
-        const stats = this.habitManager.getOverallStats();
-        const calendarView = document.getElementById('calendar-view');
-        const habitsStats = document.getElementById('habits-stats');
-        
-        calendarView.innerHTML = this.renderCalendar();
-        habitsStats.innerHTML = this.habitManager.habits.map(habit => {
-            const habitStats = this.habitManager.getHabitStats(habit.id);
+        const calendarView = this.elements['calendar-view'];
+        const habitsStats = this.elements['habits-stats'];
+        if (!calendarView || !habitsStats) return;
+
+        calendarView.innerHTML = this._renderCalendarHTML();
+        const html = this.habitManager.habits.map(h => {
+            const stats = this.habitManager.getHabitStats(h.id) || {};
+            const streak = stats.streak || 0;
+            const rate = stats.completionRate || 0;
             return `
-                <div class="habit-stat-item" style="border-left: 4px solid ${habit.color}; padding-left: 12px; margin-bottom: 16px;">
-                    <div style="font-weight: 600; margin-bottom: 4px;">${habit.name}</div>
-                    <div style="font-size: 12px; color: var(--text-secondary);">
-                        Стрик: ${habitStats.streak} дн. • Выполнение: ${habitStats.completionRate}%
+                <div class="habit-stat-item" style="border-left: 4px solid ${h.color}; padding-left: 12px; margin-bottom: 16px;">
+                    <div style="font-weight:600; margin-bottom:4px;">${this._escape(h.name)}</div>
+                    <div style="font-size:12px; color:var(--text-secondary);">
+                        Стрик: ${streak} дн. • Выполнение: ${rate}%
                     </div>
                 </div>
             `;
         }).join('');
-        
-        console.log('📈 Detailed stats rendered');
+        habitsStats.innerHTML = html;
     }
 
-    renderCalendar() {
+    _renderCalendarHTML() {
         const today = new Date();
-        let calendarHTML = `
-            <div style="font-weight: 600; margin-bottom: 16px;">
-                ${today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
-            </div>
-            <div class="calendar-grid">
-        `;
-        
-        const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-        dayNames.forEach(day => {
-            calendarHTML += `<div style="text-align: center; font-size: 12px; color: var(--text-secondary); padding: 4px;">${day}</div>`;
-        });
-        
+        const monthYear = today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' });
         const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
         const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        
-        for (let i = 0; i < firstDay.getDay(); i++) {
-            calendarHTML += '<div></div>';
-        }
-        
+        const dayNames = ['Пн','Вт','Ср','Чт','Пт','Сб','Вс'];
+
+        let html = `<div style="font-weight:600; margin-bottom:16px;">${monthYear}</div><div class="calendar-grid">`;
+        dayNames.forEach(d => html += `<div style="text-align:center; font-size:12px; color:var(--text-secondary); padding:4px;">${d}</div>`);
+
+        // firstDay.getDay(): 0 (Sun) .. 6 (Sat) — нам нужен смещённый для Пн..Вс
+        const shift = (firstDay.getDay() + 6) % 7; // 0 -> Mon index 0
+        for (let i = 0; i < shift; i++) html += '<div></div>';
+
         for (let day = 1; day <= lastDay.getDate(); day++) {
             const date = new Date(today.getFullYear(), today.getMonth(), day);
-            const dateKey = this.habitManager.getDateKey(date);
-            const isToday = date.toDateString() === today.toDateString();
-            
-            const hasCompletion = this.habitManager.habits.some(habit => 
-                habit.completedDates.includes(dateKey)
-            );
-            
-            calendarHTML += `
-                <div class="calendar-day ${hasCompletion ? 'completed' : ''} ${isToday ? 'today' : ''}">
-                    ${day}
-                </div>
-            `;
+            const key = date.toISOString().split('T')[0];
+            const isToday = date.toDateString() === new Date().toDateString();
+            const has = this.habitManager.habits.some(h => h.completedDates.includes(key));
+            html += `<div class="calendar-day ${has ? 'completed' : ''} ${isToday ? 'today' : ''}">${day}</div>`;
         }
-        
-        calendarHTML += '</div>';
-        return calendarHTML;
+        html += '</div>';
+        return html;
     }
 
-    showNotification(message) {
-        console.log('💬 Showing notification:', message);
-        const notification = document.createElement('div');
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: var(--primary);
-            color: white;
-            padding: 12px 20px;
-            border-radius: var(--radius-md);
-            z-index: 1001;
-            max-width: 300px;
-            box-shadow: var(--shadow-lg);
-            font-weight: 500;
+    // Отображение статистики отдельной привычки (быстрое окно)
+    showHabitStats(habit) {
+        const stats = this.habitManager.getHabitStats(habit.id) || {};
+        const modalHtml = `
+            <div style="padding:16px">
+                <div style="font-weight:700; margin-bottom:8px;">${this._escape(habit.name)}</div>
+                <div style="color:var(--text-secondary); margin-bottom:8px;">${this._escape(habit.description || '')}</div>
+                <div style="font-size:13px; color:var(--text-secondary);">Стрик: ${stats.streak || 0} дн. • Выполнений: ${stats.totalCompletions || 0} • ${stats.completionRate || 0}%</div>
+            </div>
         `;
-        notification.textContent = message;
-        document.body.appendChild(notification);
-        
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        // временное модальное уведомление
+        this.showNotification(modalHtml, { rawHtml: true, duration: 4000 });
     }
 
-    escapeHtml(text) {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
+    deleteHabit(habitId) {
+        if (!confirm('Удалить эту привычку? Это действие нельзя отменить.')) return;
+        const ok = this.habitManager.deleteHabit(habitId);
+        if (ok) {
+            this.render();
+            this.showNotification('Привычка удалена');
+        } else {
+            this.showNotification('Не удалось удалить привычку');
+        }
     }
 
-    getColorName(color) {
-        const colors = {
-            '#4CAF50': 'Зеленый',
-            '#2196F3': 'Синий', 
-            '#FF9800': 'Оранжевый',
-            '#9C27B0': 'Фиолетовый',
-            '#F44336': 'Красный'
-        };
-        return colors[color] || 'Зеленый';
+    toggleHabitCompletion(habitId) {
+        const completed = this.habitManager.toggleHabitCompletion(habitId);
+        if (completed) this._celebrate();
+        this.render();
     }
 
-    getFrequencyText(frequency) {
-        const frequencies = {
-            'daily': 'Ежедневно',
-            'weekdays': 'По будням',
-            'weekly': 'По выходным'
-        };
-        return frequencies[frequency] || 'Ежедневно';
+    // Небольшая анимация иконки при выполнении
+    _celebrate() {
+        const el = document.createElement('div');
+        el.style.cssText = `
+            position: fixed; left:50%; top:40%; transform:translate(-50%,-50%); font-size:48px; z-index:1001; pointer-events:none;
+            animation: pop 900ms ease-out;
+        `;
+        el.textContent = '🎉';
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 900);
+    }
+
+    // Показываем уведомление в правом верхнем углу
+    showNotification(message, { duration = 2500, rawHtml = false } = {}) {
+        const n = document.createElement('div');
+        n.className = 'app-notification';
+        n.style.cssText = `
+            position: fixed; top: 20px; right: 20px; z-index: 2000; padding: 12px 16px; border-radius: 12px;
+            background: var(--bg-secondary); color: var(--text-primary); box-shadow: var(--shadow-lg);
+        `;
+        if (rawHtml) n.innerHTML = message;
+        else n.textContent = message;
+        document.body.appendChild(n);
+        setTimeout(() => n.style.opacity = '0', duration - 200);
+        setTimeout(() => n.remove(), duration);
+    }
+
+    _checkEmptyState() {
+        const empty = this.elements['empty-state'];
+        const main = this.elements['main-content'];
+        if (!empty || !main) return;
+        if (!this.habitManager.habits.length) {
+            empty.classList.add('active');
+            main.style.display = 'none';
+        } else {
+            empty.classList.remove('active');
+            main.style.display = 'block';
+        }
+    }
+
+    // Утилиты
+    _safeSetText(id, text) {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    }
+
+    _escape(text) {
+        if (text == null) return '';
+        return String(text)
+            .replaceAll('&', '&amp;')
+            .replaceAll('<', '&lt;')
+            .replaceAll('>', '&gt;')
+            .replaceAll('"', '&quot;')
+            .replaceAll("'", '&#039;');
+    }
+
+    _frequencyText(key) {
+        switch (key) {
+            case 'daily': return 'Ежедневно';
+            case 'weekdays': return 'По будням';
+            case 'weekly': return 'По выходным';
+            default: return key;
+        }
     }
 }
 
-window.UIEngine = UIEngine;
-console.log('✅ UIEngine module loaded');
+export default UIEngine;
