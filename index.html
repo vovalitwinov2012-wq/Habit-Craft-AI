@@ -1,205 +1,65 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>HabitCraft AI</title>
-
-  <!-- Telegram Web App SDK (опционально) -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-  <!-- Стили -->
-  <link rel="stylesheet" href="styles.css">
-
-  <!-- Шрифт -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
-  <meta name="theme-color" content="#6366F1" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Habit Craft - Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div class="app">
-    <!-- Header -->
-    <header class="header">
-      <div class="header-content">
-        <h1 class="app-title">HabitCraft AI</h1>
-        <div class="header-controls">
-          <button class="icon-btn" id="theme-toggle" title="Сменить тему"><span class="theme-icon">🌙</span></button>
-          <button class="icon-btn primary" id="add-habit-btn" title="Добавить привычку">+</button>
-        </div>
-      </div>
-      <div class="daily-progress">
-        <div class="progress-bar" title="Прогресс за сегодня">
-          <div class="progress-fill" id="daily-progress-fill" style="width: 0%"></div>
-        </div>
-        <span class="progress-text" id="daily-progress-text">0% выполнено</span>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="main-content" id="main-content">
-      <!-- Today's Habits -->
-      <section class="section today-section">
-        <div class="section-header">
-          <h2>Сегодня</h2>
-          <span class="date" id="today-date"></span>
-        </div>
-        <div class="habits-container" id="today-habits">
-          <div class="text-center" style="color: var(--text-secondary); padding: var(--space-xl);">
-            Загрузка привычек...
-          </div>
-        </div>
-      </section>
-
-      <!-- AI Coach Section -->
-      <section class="section ai-section">
-        <div class="section-header">
-          <h2>AI Коуч</h2>
-          <div class="ai-credits" id="ai-credits">—</div>
-        </div>
-        <div class="ai-input-container">
-          <input type="text" id="ai-input" placeholder="Спросите у AI совета по вашим привычкам..." class="ai-input" />
-          <button class="ai-send-btn" id="ai-send-btn" title="Отправить">➤</button>
-        </div>
-        <div class="ai-response" id="ai-response">
-          <div class="ai-placeholder">
-            <div class="ai-icon">🤖</div>
-            <p>Я ваш AI-помощник! Спросите меня о привычках, мотивации или попросите создать новую привычку.</p>
-          </div>
-        </div>
-      </section>
-
-      <!-- Statistics -->
-      <section class="section stats-section">
-        <div class="section-header">
-          <h2>Статистика</h2>
-          <button class="text-btn" id="view-all-stats">Подробнее</button>
-        </div>
-        <div class="stats-grid">
-          <div class="stat-card">
-            <div class="stat-value" id="total-habits">0</div>
-            <div class="stat-label">Всего привычек</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="completion-rate">0%</div>
-            <div class="stat-label">Выполнение</div>
-          </div>
-          <div class="stat-card">
-            <div class="stat-value" id="current-streak">0</div>
-            <div class="stat-label">Дней подряд</div>
-          </div>
-        </div>
-      </section>
-    </main>
-
-    <!-- Add Habit Modal -->
-    <div class="modal-overlay" id="add-habit-modal" aria-hidden="true">
-      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="add-habit-title">
-        <div class="modal-header">
-          <h3 id="add-habit-title">Создать привычку</h3>
-          <button class="close-btn" id="close-modal" aria-label="Закрыть">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="tab-container">
-            <div class="tabs" role="tablist">
-              <button class="tab active" data-tab="manual" role="tab">Вручную</button>
-              <button class="tab" data-tab="ai" role="tab">С помощью AI</button>
+    <div class="container">
+        <header>
+            <h1>Habit Craft</h1>
+            <p>Build better habits with AI coaching</p>
+        </header>
+        
+        <main>
+            <div class="hero-section">
+                <h2>Your Personal Habit Coach</h2>
+                <p>Track your habits, get AI-powered advice, and achieve your goals</p>
+                <button id="start-btn" class="btn-primary">Get Started</button>
             </div>
-
-            <div class="tab-content active" id="manual-tab" role="tabpanel">
-              <div class="form-group">
-                <label>Название привычки</label>
-                <input type="text" id="habit-name" placeholder="Например, Утренняя зарядка" />
-              </div>
-              <div class="form-group">
-                <label>Описание</label>
-                <textarea id="habit-description" placeholder="Почему эта привычка важна для вас?"></textarea>
-              </div>
-              <div class="form-group">
-                <label>Цвет</label>
-                <div class="color-picker" id="color-picker">
-                  <div class="color-option selected" data-color="#4CAF50" style="background-color: #4CAF50;"></div>
-                  <div class="color-option" data-color="#2196F3" style="background-color: #2196F3;"></div>
-                  <div class="color-option" data-color="#FF9800" style="background-color: #FF9800;"></div>
-                  <div class="color-option" data-color="#9C27B0" style="background-color: #9C27B0;"></div>
-                  <div class="color-option" data-color="#F44336" style="background-color: #F44336;"></div>
+            
+            <div class="features">
+                <div class="feature-card">
+                    <h3>🤖 AI Coaching</h3>
+                    <p>Get personalized advice from our AI habit coach</p>
                 </div>
-              </div>
-              <div class="form-group">
-                <label>Повторение</label>
-                <div class="frequency-selector" id="frequency-selector">
-                  <button class="frequency-btn active" data-frequency="daily">Ежедневно</button>
-                  <button class="frequency-btn" data-frequency="weekdays">По будням</button>
-                  <button class="frequency-btn" data-frequency="weekly">По выходным</button>
+                <div class="feature-card">
+                    <h3>📊 Progress Tracking</h3>
+                    <p>Monitor your habits and see your progress over time</p>
                 </div>
-              </div>
+                <div class="feature-card">
+                    <h3>🔔 Reminders</h3>
+                    <p>Never forget to work on your habits with smart reminders</p>
+                </div>
             </div>
-
-            <div class="tab-content" id="ai-tab" role="tabpanel">
-              <div class="ai-generation">
-                <div class="form-group">
-                  <label>Опишите вашу цель/желаемую привычку</label>
-                  <textarea id="ai-habit-description" placeholder="Например: хочу бегать по утрам 3 раза в неделю" rows="4"></textarea>
-                </div>
-                <button class="btn-secondary full-width" id="generate-with-ai">
-                  <span class="loading-spinner" id="ai-loading-spinner" style="display:none"></span>
-                  <span id="generate-text">Сгенерировать с AI</span>
-                </button>
-
-                <div class="ai-suggestion" id="ai-suggestion" style="display:none">
-                  <div class="suggestion-header">
-                    <span>AI предложение</span>
-                    <button class="text-btn small" id="use-suggestion">Использовать</button>
-                  </div>
-                  <div class="suggestion-content">
-                    <h4 id="suggestion-name"></h4>
-                    <p id="suggestion-description"></p>
-                    <div class="suggestion-meta">
-                      <span class="color-badge" id="suggestion-color" style="background-color:#4CAF50;"></span>
-                      <span id="suggestion-frequency">Ежедневно</span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-          </div>
-        </div>
-
-        <div class="modal-footer">
-          <button class="btn-secondary" id="cancel-habit">Отмена</button>
-          <button class="btn-primary" id="save-habit">Сохранить привычку</button>
-        </div>
-      </div>
+        </main>
+        
+        <footer>
+            <p>Built with ❤️ for Telegram Mini Apps</p>
+        </footer>
     </div>
 
-    <!-- Stats Modal -->
-    <div class="modal-overlay" id="stats-modal" aria-hidden="true">
-      <div class="modal large" role="dialog" aria-modal="true" aria-labelledby="stats-title">
-        <div class="modal-header">
-          <h3 id="stats-title">Детальная статистика</h3>
-          <button class="close-btn" id="close-stats" aria-label="Закрыть">&times;</button>
-        </div>
-        <div class="modal-body">
-          <div class="stats-container">
-            <div class="calendar-view" id="calendar-view"></div>
-            <div class="habits-stats" id="habits-stats"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Empty State -->
-    <div class="empty-state" id="empty-state" role="status">
-      <div class="empty-icon">🌟</div>
-      <h3>Начните свой путь к лучшим привычкам</h3>
-      <p>Создайте свою первую привычку и начните отслеживать прогресс с помощью AI-коуча</p>
-      <button class="btn-primary large" id="create-first-habit">Создать первую привычку</button>
-    </div>
-
-  </div>
-
-  <!-- Подключаем основной модуль -->
-  <script type="module" src="./app.js"></script>
+    <script>
+        // Initialize Telegram Web App
+        const tg = window.Telegram.WebApp;
+        
+        // Expand the Web App to full screen
+        tg.expand();
+        
+        // Handle start button click
+        document.getElementById('start-btn').addEventListener('click', () => {
+            tg.showPopup({
+                title: 'Welcome to Habit Craft!',
+                message: 'Ready to build better habits?',
+                buttons: [{ type: 'ok', text: 'Let\'s Go!' }]
+            });
+        });
+        
+        // You can add more Telegram Web App functionality here
+        console.log('Telegram Web App initialized:', tg.initDataUnsafe);
+    </script>
 </body>
 </html>

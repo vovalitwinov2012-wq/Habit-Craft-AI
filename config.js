@@ -1,19 +1,19 @@
-// config.js — конфигурация приложения
-export const CONFIG = {
-  APP_NAME: "HabitCraft AI",
-  VERSION: "1.2.2",
-  DEFAULT_THEME: "light",
-  AI_API_URL: "/api/ai", // мы используем serverless-прокси на Vercel
-  AI_MODEL: "deepseek/deepseek-chat-v3.1:free",
-  AI_REQUESTS_PER_DAY: 5,
-  STORAGE_KEYS: {
-    HABITS: "habits",
-    SETTINGS: "settings",
-    STATS: "stats",
-    AI_REQUESTS: "ai_requests",
-    THEME: "theme"
+export const config = {
+  appName: 'Habit Craft',
+  version: '1.0.0',
+  maxHabits: 10,
+  defaultSettings: {
+    notifications: true,
+    theme: 'light',
+    language: 'en',
+    reminderTime: '09:00',
+    weeklyReview: true
+  },
+  aiSettings: {
+    model: 'openai/gpt-3.5-turbo',
+    maxTokens: 500,
+    temperature: 0.7
   }
 };
 
-// Примечание: ключ не помещаем в клиент — используем serverless-прокси.
-window.APP_CONFIG = window.APP_CONFIG || {};
+export default config;

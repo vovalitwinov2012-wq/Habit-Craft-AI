@@ -1,4 +1,5 @@
-const express = require('express');
+import express from 'express';
+
 const router = express.Router();
 
 router.post('/', async (req, res) => {
@@ -98,4 +99,4 @@ router.get('/health', (req, res) => {
   });
 });
 
-module.exports = router;
+export default router;

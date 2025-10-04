@@ -2,6 +2,7 @@
   "name": "habit-craft",
   "version": "1.0.0",
   "description": "Telegram Mini App for habit tracking",
+  "type": "module",
   "main": "app.js",
   "scripts": {
     "dev": "node app.js",
@@ -12,7 +13,6 @@
   },
   "dependencies": {
     "express": "^4.18.2",
-    "node-fetch": "^2.6.7",
     "uuid": "^9.0.0"
   }
 }

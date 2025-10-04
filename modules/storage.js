@@ -1,54 +1,80 @@
-// modules/storage.js — менеджер локального хранилища
-// Данные хранятся с префиксом habitcraft:<userId>:<key>
-// Если в Telegram — используем Telegram user id, иначе local-user
+import express from 'express';
 
-export default class StorageManager {
-  constructor() {
-    this.userId = this._deriveUserId();
+const router = express.Router();
+
+// Simple in-memory storage
+let userData = {
+  habits: [],
+  settings: {},
+  statistics: {}
+};
+
+// Get all user data
+router.get('/', (req, res) => {
+  res.json({
+    success: true,
+    data: userData,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Save user data
+router.post('/', (req, res) => {
+  try {
+    const { habits, settings, statistics } = req.body;
+    
+    if (habits) userData.habits = habits;
+    if (settings) userData.settings = { ...userData.settings, ...settings };
+    if (statistics) userData.statistics = { ...userData.statistics, ...statistics };
+
+    res.json({
+      success: true,
+      message: 'Data saved successfully',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to save data' });
   }
+});
 
-  _deriveUserId() {
-    try {
-      if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user?.id) {
-        return `tg-${Telegram.WebApp.initDataUnsafe.user.id}`;
-      }
-    } catch (e) {
-      // ignore
+// Reset storage
+router.delete('/reset', (req, res) => {
+  try {
+    userData = {
+      habits: [],
+      settings: {},
+      statistics: {}
+    };
+
+    res.json({
+      success: true,
+      message: 'Storage reset successfully'
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reset storage' });
+  }
+});
+
+// Get statistics
+router.get('/stats', (req, res) => {
+  const totalHabits = userData.habits.length;
+  const completedHabits = userData.habits.filter(h => h.completed > 0).length;
+  const totalCompletions = userData.habits.reduce((sum, h) => sum + h.completed, 0);
+  const longestStreak = Math.max(...userData.habits.map(h => h.streak), 0);
+
+  res.json({
+    success: true,
+    statistics: {
+      totalHabits,
+      completedHabits,
+      totalCompletions,
+      longestStreak,
+      habitsByFrequency: userData.habits.reduce((acc, h) => {
+        acc[h.frequency] = (acc[h.frequency] || 0) + 1;
+        return acc;
+      }, {})
     }
-    return 'local-user';
-  }
+  });
+});
 
-  _key(key) {
-    return `habitcraft:${this.userId}:${key}`;
-  }
-
-  setItem(key, value) {
-    try {
-      localStorage.setItem(this._key(key), JSON.stringify(value));
-      return true;
-    } catch (e) {
-      console.error('Storage setItem error', e);
-      return false;
-    }
-  }
-
-  getItem(key) {
-    try {
-      const raw = localStorage.getItem(this._key(key));
-      return raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      console.error('Storage getItem error', e);
-      return null;
-    }
-  }
-
-  removeItem(key) {
-    try {
-      localStorage.removeItem(this._key(key));
-      return true;
-    } catch (e) {
-      console.error('Storage removeItem error', e);
-      return false;
-    }
-  }
-}
+export default router;
