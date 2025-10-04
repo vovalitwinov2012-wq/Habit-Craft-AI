@@ -1,12 +1,6 @@
 {
   "version": 2,
   "name": "habitcraft-ai",
-  "builds": [
-    {
-      "src": "**/*.js",
-      "use": "@vercel/static"
-    }
-  ],
   "routes": [
     {
       "src": "/(.*)",
