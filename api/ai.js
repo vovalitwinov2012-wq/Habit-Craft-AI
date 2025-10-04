@@ -1,0 +1,100 @@
+// api/ai.js (Node serverless для Vercel)
+// Прокси для AI-запросов — защищает API-ключ на серверной стороне.
+
+const OPENROUTER_API = 'https://openrouter.ai/api/v1/chat/completions';
+
+module.exports = async (req, res) => {
+  // Разрешаем только POST
+  if (req.method !== 'POST') {
+    res.status(405).json({ success: false, message: 'Method not allowed' });
+    return;
+  }
+
+  const apiKey = process.env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    res.status(500).json({ success: false, message: 'AI API key not configured on server' });
+    return;
+  }
+
+  try {
+    const body = req.body || {};
+    const { type, message, context, preferences } = body;
+
+    // Сгенерируем сообщения для модели
+    let messages;
+    if (type === 'habit_generation') {
+      messages = [
+        { role: 'system', content: `Ты эксперт по формированию привычек. Верни ТОЛЬКО JSON объект в формате:
+{
+  "name": "Название привычки (2-4 слова)",
+  "description": "Короткое мотивирующее описание",
+  "color": "#4CAF50",
+  "frequency": "daily",
+  "motivationTips": ["Совет 1","Совет 2"]
+}` },
+        { role: 'user', content: `Создай привычку по описанию: "${message}"` }
+      ];
+    } else {
+      messages = [
+        { role: 'system', content: 'Ты AI-коуч по привычкам. Дай короткий, практичный совет (2-3 предложения). Отвечай на русском.' },
+        { role: 'user', content: String(message || '') }
+      ];
+    }
+
+    // Подготовим тело запроса к OpenRouter
+    const requestBody = {
+      model: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-chat-v3.1:free',
+      messages,
+      max_tokens: type === 'habit_generation' ? 500 : 300,
+      temperature: 0.7
+    };
+
+    // Делаем запрос к OpenRouter
+    const fetchRes = await fetch(OPENROUTER_API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!fetchRes.ok) {
+      const text = await fetchRes.text().catch(()=>'');
+      res.status(502).json({ success: false, message: 'AI provider error', details: text });
+      return;
+    }
+
+    const data = await fetchRes.json();
+
+    // Извлекаем контент
+    let content = '';
+    if (data?.choices && data.choices[0] && data.choices[0].message) {
+      content = data.choices[0].message.content;
+    } else {
+      content = JSON.stringify(data);
+    }
+
+    if (type === 'habit_generation') {
+      // Пытаемся извлечь JSON из content
+      try {
+        const cleaned = content.replace(/```json|```/g, '').trim();
+        const match = cleaned.match(/\{[\s\S]*\}/);
+        const json = match ? JSON.parse(match[0]) : null;
+        if (json) {
+          res.status(200).json({ success: true, habit: json });
+          return;
+        }
+      } catch (e) {
+        // игнорируем парсинг
+      }
+      // fallback — возвращаем сырое содержание
+      res.status(200).json({ success: true, habitRaw: content });
+      return;
+    } else {
+      // advice
+      res.status(200).json({ success: true, answer: content });
+      return;
+    }
+  } catch (err) {
+    console.error('AI proxy error', err);
+    res.status(500).json({ success: false, message: 'Internal server error', error: String(err) });
+  }
+};

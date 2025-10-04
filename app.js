@@ -1,46 +1,67 @@
-// app.js — точка входа HabitCraft AI
-import { CONFIG } from "./config.js";
-import StorageManager from "./modules/storage.js";
-import HabitManager from "./modules/habit-manager.js";
-import AICoach from "./modules/ai-coach.js";
-import UIEngine from "./modules/ui-engine.js";
+// app.js — главный модуль (ES module)
+// Инициализация приложения: связываем manager + ai + ui, и Telegram WebApp
+
+import { CONFIG } from './config.js';
+import StorageManager from './modules/storage.js';
+import HabitManager from './modules/habit-manager.js';
+import AICoach from './modules/ai-coach.js';
+import UIEngine from './modules/ui-engine.js';
 
 class HabitCraftApp {
-  async init() {
-    await this.waitForDOM();
-    await this.initTelegram();
+  constructor() {
+    this.storage = null;
+    this.habitManager = null;
+    this.aiCoach = null;
+    this.uiEngine = null;
+  }
 
+  async init() {
+    await this._waitForDOM();
+    await this._initTelegramIfPresent();
+
+    // Инициализация модулей
     this.storage = new StorageManager();
     this.habitManager = new HabitManager();
     this.aiCoach = new AICoach();
-    this.ui = new UIEngine(this.habitManager, this.aiCoach);
+    this.uiEngine = new UIEngine(this.habitManager, this.aiCoach);
 
-    this.ui.init();
-    console.log("✅ HabitCraft AI инициализирован");
+    // Запускаем UI
+    this.uiEngine.init();
+
+    // Для отладки в консоли
+    window.habitCraftApp = {
+      storage: this.storage,
+      habitManager: this.habitManager,
+      aiCoach: this.aiCoach,
+      uiEngine: this.uiEngine
+    };
+
+    console.log('✅ HabitCraftApp инициализирован');
   }
 
-  waitForDOM() {
-    return new Promise((resolve) => {
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", resolve);
+  _waitForDOM() {
+    return new Promise(resolve => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => resolve());
       } else resolve();
     });
   }
 
-  async initTelegram() {
-    return new Promise((resolve) => {
+  _initTelegramIfPresent() {
+    return new Promise(resolve => {
       try {
-        if (typeof Telegram !== "undefined" && Telegram.WebApp) {
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
           Telegram.WebApp.ready();
-          Telegram.WebApp.expand();
+          try { Telegram.WebApp.expand(); } catch (e) { /* ignore */ }
           const theme = Telegram.WebApp.colorScheme || CONFIG.DEFAULT_THEME;
-          document.documentElement.setAttribute("data-theme", theme);
-          console.log("🤖 Telegram WebApp готов");
+          // Передаём тему UIEngine может переопределить
+          document.documentElement.setAttribute('data-theme', theme);
+          console.log('Telegram WebApp обнаружен, тема:', theme);
         } else {
-          console.log("ℹ️ Запуск вне Telegram WebApp (browser mode)");
+          console.log('Telegram WebApp не обнаружен — режим браузера');
         }
-      } catch (err) {
-        console.warn("⚠️ Ошибка Telegram init:", err);
+      } catch (e) {
+        console.warn('Ошибка инициализации Telegram.WebApp', e);
       } finally {
         resolve();
       }
@@ -48,4 +69,7 @@ class HabitCraftApp {
   }
 }
 
-new HabitCraftApp().init();
+const app = new HabitCraftApp();
+app.init().catch(err => console.error('Ошибка инициализации приложения', err));
+
+export default app;

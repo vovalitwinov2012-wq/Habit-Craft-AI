@@ -1,20 +1,19 @@
-// config.js — конфигурация HabitCraft AI
-
+// config.js — конфигурация приложения
 export const CONFIG = {
   APP_NAME: "HabitCraft AI",
-  VERSION: "1.2.1",
+  VERSION: "1.2.2",
   DEFAULT_THEME: "light",
-  AI_API_URL: "https://openrouter.ai/api/v1/chat/completions",
+  AI_API_URL: "/api/ai", // мы используем serverless-прокси на Vercel
   AI_MODEL: "deepseek/deepseek-chat-v3.1:free",
-  AI_REQUESTS_PER_DAY: 10,
+  AI_REQUESTS_PER_DAY: 5,
   STORAGE_KEYS: {
     HABITS: "habits",
     SETTINGS: "settings",
-    AI_REQUESTS: "ai_requests"
+    STATS: "stats",
+    AI_REQUESTS: "ai_requests",
+    THEME: "theme"
   }
 };
 
-// Инжект переменных окружения (Vercel Environment Variables)
-window.__ENV__ = {
-  OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || null
-};
+// Примечание: ключ не помещаем в клиент — используем serverless-прокси.
+window.APP_CONFIG = window.APP_CONFIG || {};
