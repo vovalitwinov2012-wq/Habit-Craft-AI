@@ -1,61 +1,99 @@
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import aiRoute from './api/ai.js';
-import habitManager from './modules/habit-manager.js';
-import storage from './modules/storage.js';
-import uiEngine from './modules/ui-engine.js';
+// Main Application
+class HabitCraftApp {
+    constructor() {
+        this.isInitialized = false;
+        console.log('🚀 HabitCraftApp constructor called');
+    }
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+    async init() {
+        try {
+            console.log('🎯 Starting HabitCraft AI initialization...');
+            
+            // Wait for DOM to be fully ready
+            await this.waitForDOM();
+            console.log('✅ DOM is ready');
+            
+            // Initialize core components
+            console.log('🔄 Initializing core components...');
+            this.storage = new StorageManager();
+            this.habitManager = new HabitManager();
+            this.aiCoach = new AICoach();
+            this.uiEngine = new UIEngine(this.habitManager, this.aiCoach);
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+            // Initialize UI Engine
+            console.log('🔄 Initializing UI Engine...');
+            this.uiEngine.init();
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static('.'));
+            // Initialize Telegram Web App
+            console.log('🔄 Initializing Telegram WebApp...');
+            this.initTelegram();
 
-// API Routes
-app.use('/api/ai', aiRoute);
-app.use('/api/habits', habitManager);
-app.use('/api/storage', storage);
-app.use('/api/ui', uiEngine);
+            this.isInitialized = true;
+            console.log('🎉 HabitCraft AI initialized successfully!');
+            
+        } catch (error) {
+            console.error('💥 Failed to initialize HabitCraft AI:', error);
+        }
+    }
 
-// Serve main page
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+    waitForDOM() {
+        return new Promise((resolve) => {
+            if (document.readyState === 'loading') {
+                console.log('⏳ Waiting for DOM content loaded...');
+                document.addEventListener('DOMContentLoaded', resolve);
+            } else {
+                console.log('⚡ DOM already ready');
+                resolve();
+            }
+        });
+    }
+
+    initTelegram() {
+        if (typeof Telegram !== 'undefined' && Telegram.WebApp) {
+            try {
+                Telegram.WebApp.ready();
+                Telegram.WebApp.expand();
+                console.log('✅ Telegram WebApp initialized successfully');
+                
+                // Set theme based on Telegram
+                const theme = Telegram.WebApp.colorScheme;
+                this.uiEngine.saveTheme(theme);
+                this.uiEngine.applyTheme();
+                console.log('🎨 Telegram theme applied:', theme);
+                
+            } catch (error) {
+                console.warn('⚠️ Telegram Web App initialization failed:', error);
+            }
+        } else {
+            console.log('ℹ️ Telegram WebApp not detected, running in standalone mode');
+        }
+    }
+}
+
+// Global error handler
+window.addEventListener('error', (event) => {
+    console.error('💥 Global error:', event.error);
 });
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    nodeVersion: process.version,
-    environment: process.env.NODE_ENV || 'development'
-  });
+window.addEventListener('unhandledrejection', (event) => {
+    console.error('💥 Unhandled promise rejection:', event.reason);
 });
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('Server error:', err);
-  res.status(500).json({
-    error: 'Internal server error',
-    message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
-  });
+// Initialize the application when DOM is loaded
+console.log('🎬 Starting HabitCraft AI application...');
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('📄 DOMContentLoaded event fired');
+    window.habitCraftApp = new HabitCraftApp();
+    window.habitCraftApp.init().catch(error => {
+        console.error('💥 App initialization failed:', error);
+    });
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: 'Endpoint not found' });
-});
-
-app.listen(PORT, () => {
-  console.log(`Habit Craft server running on port ${PORT}`);
-  console.log(`Node.js version: ${process.version}`);
-  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-});
-
-export default app;
+// Fallback initialization for cases where DOMContentLoaded already fired
+if (document.readyState !== 'loading') {
+    console.log('⚡ DOM already ready, initializing immediately');
+    window.habitCraftApp = new HabitCraftApp();
+    window.habitCraftApp.init().catch(error => {
+        console.error('💥 App initialization failed:', error);
+    });
+}

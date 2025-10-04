@@ -1,113 +1,298 @@
-// modules/ai-coach.js — AI-коуч
-// Делает запросы к локальному serverless-прокси (API на /api/ai).
-// Если серверная прокси недоступна или лимит, используется mock.
-
-import StorageManager from './storage.js';
-import { CONFIG } from '../config.js';
-
-export default class AICoach {
-  constructor() {
-    this.storage = new StorageManager();
-    this.dailyRequests = this._loadDailyRequests();
-    this.proxyUrl = CONFIG.AI_API_URL; // '/api/ai'
-  }
-
-  _loadDailyRequests() {
-    const today = this._today();
-    const saved = this.storage.getItem(CONFIG.STORAGE_KEYS.AI_REQUESTS) || { date: today, count: 0, totalUsed: 0 };
-    if (saved.date !== today) {
-      saved.date = today;
-      saved.count = 0;
+// AI Coach with DeepSeek Integration
+class AICoach {
+    constructor() {
+        this.storage = new StorageManager();
+        this.dailyRequests = this.loadDailyRequests();
+        this.apiKey = this.getApiKey();
+        this.isAvailable = !!this.apiKey;
+        this.baseURL = "https://openrouter.ai/api/v1";
+        this.model = "deepseek/deepseek-chat-v3.1:free";
+        console.log('🤖 AICoach initialized, available:', this.isAvailable);
     }
-    this.storage.setItem(CONFIG.STORAGE_KEYS.AI_REQUESTS, saved);
-    return saved;
-  }
 
-  _saveDailyRequests() {
-    this.storage.setItem(CONFIG.STORAGE_KEYS.AI_REQUESTS, this.dailyRequests);
-  }
-
-  _today() {
-    return new Date().toISOString().split('T')[0];
-  }
-
-  canMakeRequest() {
-    return this.dailyRequests.count < CONFIG.AI_REQUESTS_PER_DAY;
-  }
-
-  getUsageStats() {
-    return { remainingToday: Math.max(0, CONFIG.AI_REQUESTS_PER_DAY - this.dailyRequests.count), usedToday: this.dailyRequests.count, totalUsed: this.dailyRequests.totalUsed || 0 };
-  }
-
-  async getAdvice(message, context = {}) {
-    if (!message || !message.trim()) return 'Введите запрос для AI-коуча.';
-    if (!this.canMakeRequest()) throw new Error('DAILY_LIMIT_REACHED');
-
-    try {
-      // увеличиваем счётчик (в любом случае — попытка)
-      this.dailyRequests.count++;
-      this.dailyRequests.totalUsed = (this.dailyRequests.totalUsed || 0) + 1;
-      this._saveDailyRequests();
-
-      // запросим через serverless-прокси
-      const resp = await fetch(this.proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'advice', message, context })
-      });
-
-      if (!resp.ok) throw new Error('AI proxy error ' + resp.status);
-      const data = await resp.json();
-      // ожидаем { success: true, answer: '...' }
-      if (data && data.answer) return data.answer;
-      // fallback: если вернулся raw text
-      if (typeof data === 'string') return data;
-      return this._mockAdvice();
-    } catch (err) {
-      console.warn('AI getAdvice failed, using mock', err);
-      return this._mockAdvice();
+    loadDailyRequests() {
+        const today = this.getTodayKey();
+        const requests = this.storage.getItem(CONFIG.STORAGE_KEYS.AI_REQUESTS) || { 
+            date: today, 
+            count: 0,
+            totalUsed: 0
+        };
+        
+        if (requests.date !== today) {
+            requests.date = today;
+            requests.count = 0;
+            this.storage.setItem(CONFIG.STORAGE_KEYS.AI_REQUESTS, requests);
+        }
+        
+        console.log('📊 AI requests today:', requests.count);
+        return requests;
     }
-  }
 
-  async generateHabit(description, preferences = {}) {
-    if (!description || !description.trim()) throw new Error('Введите описание для генерации привычки');
-    if (!this.canMakeRequest()) throw new Error('DAILY_LIMIT_REACHED');
-
-    try {
-      this.dailyRequests.count++;
-      this.dailyRequests.totalUsed = (this.dailyRequests.totalUsed || 0) + 1;
-      this._saveDailyRequests();
-
-      const resp = await fetch(this.proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: 'habit_generation', message: description, preferences })
-      });
-
-      if (!resp.ok) throw new Error('AI proxy error ' + resp.status);
-      const data = await resp.json();
-      if (data && data.habit) return data.habit;
-      return this._generateMockHabit(description);
-    } catch (err) {
-      console.warn('AI generateHabit failed, fallback to mock', err);
-      return this._generateMockHabit(description);
+    canMakeRequest() {
+        const canMake = this.dailyRequests.count < CONFIG.AI_REQUESTS_PER_DAY;
+        console.log('🔍 Can make AI request:', canMake);
+        return canMake;
     }
-  }
 
-  _mockAdvice() {
-    const arr = [
-      'Последовательность важнее идеала — делайте немного, но регулярно.',
-      'Начните с 5 минут в день — это даст устойчивый эффект.',
-      'Свяжите новую привычку с уже существующим ритуалом.'
-    ];
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
+    getRemainingRequests() {
+        const remaining = Math.max(0, CONFIG.AI_REQUESTS_PER_DAY - this.dailyRequests.count);
+        console.log('🎫 Remaining AI requests:', remaining);
+        return remaining;
+    }
 
-  _generateMockHabit(description='') {
-    const candidates = [
-      { name: 'Утренняя медитация', description: '5 минут медитации по утрам для спокойствия', color: '#2196F3', frequency: 'daily', motivationTips: ['Начните с 3 минут','Дышите глубоко'] },
-      { name: 'Вечерний дневник', description: 'Записывайте 3 вещи, за которые благодарны', color: '#FF9800', frequency: 'daily', motivationTips: ['Пишите перед сном','Будьте кратки'] }
-    ];
-    return candidates[Math.floor(Math.random()*candidates.length)];
-  }
+    async getAdvice(userMessage, context = {}) {
+        console.log('💭 Getting AI advice:', userMessage);
+        
+        if (!this.canMakeRequest()) {
+            throw new Error('DAILY_LIMIT_REACHED');
+        }
+
+        if (!this.isAvailable) {
+            console.log('🤖 Using mock AI response');
+            return this.getMockAdvice(userMessage, context);
+        }
+
+        this.dailyRequests.count++;
+        this.dailyRequests.totalUsed++;
+        this.storage.setItem(CONFIG.STORAGE_KEYS.AI_REQUESTS, this.dailyRequests);
+
+        try {
+            const response = await this.makeAIRequest(userMessage, 'advice', context);
+            console.log('✅ AI advice received');
+            return response;
+        } catch (error) {
+            console.error('❌ AI Advice error:', error);
+            return this.getMockAdvice(userMessage, context);
+        }
+    }
+
+    async generateHabit(description, preferences = {}) {
+        console.log('🎨 Generating habit with AI:', description);
+        
+        if (!this.canMakeRequest()) {
+            throw new Error('DAILY_LIMIT_REACHED');
+        }
+
+        if (!this.isAvailable) {
+            console.log('🤖 Using mock habit generation');
+            return this.generateMockHabit(description, preferences);
+        }
+
+        this.dailyRequests.count++;
+        this.dailyRequests.totalUsed++;
+        this.storage.setItem(CONFIG.STORAGE_KEYS.AI_REQUESTS, this.dailyRequests);
+
+        try {
+            const response = await this.makeAIRequest(description, 'habit_generation', preferences);
+            console.log('✅ AI habit generated');
+            return this.parseHabitResponse(response);
+        } catch (error) {
+            console.error('❌ AI Habit generation error:', error);
+            return this.generateMockHabit(description, preferences);
+        }
+    }
+
+    async makeAIRequest(userMessage, type, context = {}) {
+        console.log('🌐 Making AI request to:', this.model);
+        
+        const messages = this.buildMessages(userMessage, type, context);
+        
+        const requestBody = {
+            model: this.model,
+            messages: messages,
+            max_tokens: type === 'habit_generation' ? 500 : 300,
+            temperature: 0.7,
+        };
+
+        if (type === 'habit_generation') {
+            requestBody.response_format = { type: "json_object" };
+        }
+
+        const response = await fetch(`${this.baseURL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.apiKey}`,
+                'HTTP-Referer': this.getSiteURL(),
+                'X-Title': this.getSiteName()
+            },
+            body: JSON.stringify(requestBody)
+        });
+
+        if (!response.ok) {
+            throw new Error(`AI API error: ${response.status}`);
+        }
+
+        const data = await response.json();
+        
+        if (!data.choices || !data.choices[0] || !data.choices[0].message) {
+            throw new Error('Invalid response format from AI');
+        }
+
+        return data.choices[0].message.content;
+    }
+
+    buildMessages(userMessage, type, context) {
+        if (type === 'habit_generation') {
+            return [
+                {
+                    role: "system",
+                    content: `Ты эксперт по формированию привычек. Создай структурированную привычку на основе описания пользователя.
+
+Требования:
+- Верни ТОЛЬКО JSON объект
+- Формат строго соблюдай
+
+JSON формат:
+{
+    "name": "Название привычки (2-4 слова)",
+    "description": "Мотивирующее описание (1-2 предложения)",
+    "color": "#4CAF50",
+    "frequency": "daily",
+    "motivationTips": ["Совет 1", "Совет 2", "Совет 3"]
 }
+
+Цвета: #4CAF50 (зеленый), #2196F3 (синий), #FF9800 (оранжевый), #9C27B0 (фиолетовый), #F44336 (красный)
+Частоты: daily, weekdays, weekly`
+                },
+                {
+                    role: "user",
+                    content: `Создай привычку: "${userMessage}"`
+                }
+            ];
+        } else {
+            return [
+                {
+                    role: "system",
+                    content: `Ты AI-коуч по привычкам. Дай короткий, практичный совет (2-3 предложения). Отвечай на русском. Будь поддерживающим.`
+                },
+                {
+                    role: "user", 
+                    content: userMessage
+                }
+            ];
+        }
+    }
+
+    parseHabitResponse(response) {
+        try {
+            const cleanResponse = response.replace(/```json|```/g, '').trim();
+            const jsonMatch = cleanResponse.match(/\{[\s\S]*\}/);
+            
+            if (!jsonMatch) {
+                throw new Error('No JSON found');
+            }
+
+            const habitData = JSON.parse(jsonMatch[0]);
+
+            const parsedHabit = {
+                name: habitData.name || 'Новая привычка',
+                description: habitData.description || 'Важная привычка для саморазвития',
+                color: this.validateColor(habitData.color),
+                frequency: this.validateFrequency(habitData.frequency),
+                motivationTips: Array.isArray(habitData.motivationTips) ? habitData.motivationTips : []
+            };
+
+            console.log('✅ Parsed AI habit:', parsedHabit);
+            return parsedHabit;
+        } catch (error) {
+            console.error('❌ Failed to parse AI habit response:', error);
+            return this.generateMockHabit();
+        }
+    }
+
+    validateColor(color) {
+        const allowedColors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#F44336'];
+        return allowedColors.includes(color) ? color : '#4CAF50';
+    }
+
+    validateFrequency(frequency) {
+        const allowedFrequencies = ['daily', 'weekdays', 'weekly'];
+        return allowedFrequencies.includes(frequency) ? frequency : 'daily';
+    }
+
+    getMockAdvice(userMessage, context) {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const advicePool = [
+                    "Помните: последовательность важнее перфекционизма. Лучше делать привычку регулярно, даже если неидеально, чем стремиться к совершенству и пропускать дни.",
+                    "Начните с малого - даже 5 минут в день создают мощный импульс для изменений. Главное - сделать первый шаг сегодня.",
+                    "Отслеживание прогресса - уже половина успеха! Тот факт, что вы задумываетесь о своих привычках, показывает вашу commitment к изменениям.",
+                    "Свяжите новую привычку с уже существующей рутиной. Например, 'после утреннего кофе я буду медитировать 5 минут'.",
+                    "Не ругайте себя за пропущенные дни. Вместо этого сосредоточьтесь на том, чтобы вернуться к привычке на следующий день."
+                ];
+                
+                const randomAdvice = advicePool[Math.floor(Math.random() * advicePool.length)];
+                console.log('🤖 Mock advice given');
+                resolve(randomAdvice);
+            }, 800);
+        });
+    }
+
+    generateMockHabit(description = "") {
+        return new Promise((resolve) => {
+            setTimeout(() => {
+                const habits = [
+                    {
+                        name: "Утренняя медитация",
+                        description: "Начните день с ясностью ума и внутренним спокойствием",
+                        color: "#2196F3",
+                        frequency: "daily",
+                        motivationTips: [
+                            "Начните с 3 минут и постепенно увеличивайте",
+                            "Используйте дыхание как якорь внимания",
+                            "Не судите себя за блуждающие мысли"
+                        ]
+                    },
+                    {
+                        name: "Вечерний дневник",
+                        description: "Подведите итоги дня и подготовьтесь к завтрашнему",
+                        color: "#FF9800",
+                        frequency: "daily",
+                        motivationTips: [
+                            "Записывайте 3 благодарности за день",
+                            "Отмечайте маленькие победы",
+                            "Планируйте 3 главные задачи на завтра"
+                        ]
+                    }
+                ];
+
+                const selectedHabit = habits[Math.floor(Math.random() * habits.length)];
+                console.log('🤖 Mock habit generated:', selectedHabit);
+                resolve(selectedHabit);
+            }, 1000);
+        });
+    }
+
+    getApiKey() {
+        return window.APP_CONFIG.OPENROUTER_API_KEY;
+    }
+
+    getSiteURL() {
+        return window.location.origin;
+    }
+
+    getSiteName() {
+        return CONFIG.APP_NAME;
+    }
+
+    getTodayKey() {
+        return new Date().toISOString().split('T')[0];
+    }
+
+    getUsageStats() {
+        const stats = {
+            usedToday: this.dailyRequests.count,
+            remainingToday: this.getRemainingRequests(),
+            totalUsed: this.dailyRequests.totalUsed,
+            isAvailable: this.isAvailable,
+            model: this.model
+        };
+        
+        console.log('📊 AI usage stats:', stats);
+        return stats;
+    }
+}
+
+window.AICoach = AICoach;
+console.log('✅ AICoach module loaded');
