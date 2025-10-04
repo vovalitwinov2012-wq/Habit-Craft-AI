@@ -1,211 +1,42 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HabitCraft AI</title>
-    <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>HabitCraft AI — Телеграм Mini App</title>
+
+  <!-- Telegram Web App (необязательно) -->
+  <script async src="https://telegram.org/js/telegram-web-app.js"></script>
+
+  <!-- Стили -->
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- Поддержка кастомного API-ключа в window.APP_CONFIG
+       Если хотите, задайте в Vercel переменную и вставьте здесь при билде.
+       Пример (локально): <script>window.APP_CONFIG = { OPENROUTER_API_KEY: 'sk-...' }</script>
+  -->
+  <script>
+    // Если окружение не установлено, оставим пустой объект — AI уйдёт в mock-режим.
+    window.APP_CONFIG = window.APP_CONFIG || { OPENROUTER_API_KEY: null };
+  </script>
 </head>
 <body>
-    <div class="app">
-        <!-- Header -->
-        <header class="header">
-            <div class="header-content">
-                <h1 class="app-title">HabitCraft AI</h1>
-                <div class="header-controls">
-                    <button class="icon-btn" id="theme-toggle" title="Сменить тему">
-                        <span class="theme-icon">🌙</span>
-                    </button>
-                    <button class="icon-btn primary" id="add-habit-btn">
-                        <span>+</span>
-                    </button>
-                </div>
-            </div>
-            <div class="daily-progress">
-                <div class="progress-bar">
-                    <div class="progress-fill" id="daily-progress-fill"></div>
-                </div>
-                <span class="progress-text" id="daily-progress-text">0% выполнено</span>
-            </div>
-        </header>
+  <div id="root" class="app-root"></div>
 
-        <!-- Main Content -->
-        <main class="main-content" id="main-content">
-            <!-- Today's Habits -->
-            <section class="section today-section">
-                <div class="section-header">
-                    <h2>Сегодня</h2>
-                    <span class="date" id="today-date"></span>
-                </div>
-                <div class="habits-container" id="today-habits">
-                    <div class="text-center" style="color: var(--text-secondary); padding: var(--space-xl);">
-                        Загрузка привычек...
-                    </div>
-                </div>
-            </section>
+  <!-- Подключаем конфиг и модули (ESM). Порядок важен. -->
+  <script type="module">
+    // Загружаем конфиг и приложение
+    import './config.js';
+    import App from './app.client.js';
 
-            <!-- AI Coach Section -->
-            <section class="section ai-section">
-                <div class="section-header">
-                    <h2>AI Коуч</h2>
-                    <div class="ai-credits" id="ai-credits">5 запросов осталось</div>
-                </div>
-                <div class="ai-input-container">
-                    <input 
-                        type="text" 
-                        id="ai-input" 
-                        placeholder="Спросите у AI совета по вашим привычкам..."
-                        class="ai-input"
-                    >
-                    <button class="ai-send-btn" id="ai-send-btn">
-                        <span>➤</span>
-                    </button>
-                </div>
-                <div class="ai-response" id="ai-response">
-                    <div class="ai-placeholder">
-                        <div class="ai-icon">🤖</div>
-                        <p>Я ваш AI-помощник! Спросите меня о привычках, мотивации или попросите создать новую привычку.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Statistics -->
-            <section class="section stats-section">
-                <div class="section-header">
-                    <h2>Статистика</h2>
-                    <button class="text-btn" id="view-all-stats">Подробнее</button>
-                </div>
-                <div class="stats-grid">
-                    <div class="stat-card">
-                        <div class="stat-value" id="total-habits">0</div>
-                        <div class="stat-label">Всего привычек</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="completion-rate">0%</div>
-                        <div class="stat-label">Выполнение</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-value" id="current-streak">0</div>
-                        <div class="stat-label">Дней подряд</div>
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        <!-- Add Habit Modal -->
-        <div class="modal-overlay" id="add-habit-modal">
-            <div class="modal">
-                <div class="modal-header">
-                    <h3>Создать привычку</h3>
-                    <button class="close-btn" id="close-modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="tab-container">
-                        <div class="tabs">
-                            <button class="tab active" data-tab="manual">Вручную</button>
-                            <button class="tab" data-tab="ai">С помощью AI</button>
-                        </div>
-                        
-                        <div class="tab-content active" id="manual-tab">
-                            <div class="form-group">
-                                <label>Название привычки</label>
-                                <input type="text" id="habit-name" placeholder="Например, Утренняя зарядка">
-                            </div>
-                            <div class="form-group">
-                                <label>Описание</label>
-                                <textarea id="habit-description" placeholder="Почему эта привычка важна для вас?"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label>Цвет</label>
-                                <div class="color-picker">
-                                    <div class="color-option selected" data-color="#4CAF50" style="background-color: #4CAF50;"></div>
-                                    <div class="color-option" data-color="#2196F3" style="background-color: #2196F3;"></div>
-                                    <div class="color-option" data-color="#FF9800" style="background-color: #FF9800;"></div>
-                                    <div class="color-option" data-color="#9C27B0" style="background-color: #9C27B0;"></div>
-                                    <div class="color-option" data-color="#F44336" style="background-color: #F44336;"></div>
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label>Повторение</label>
-                                <div class="frequency-selector">
-                                    <button class="frequency-btn active" data-frequency="daily">Ежедневно</button>
-                                    <button class="frequency-btn" data-frequency="weekdays">По будням</button>
-                                    <button class="frequency-btn" data-frequency="weekly">По выходным</button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="tab-content" id="ai-tab">
-                            <div class="ai-generation">
-                                <div class="form-group">
-                                    <label>Опишите вашу привычку</label>
-                                    <textarea 
-                                        id="ai-habit-description" 
-                                        placeholder="Например: Хочу начать бегать по утрам 3 раза в неделю, чтобы улучшить здоровье"
-                                        rows="4"
-                                    ></textarea>
-                                </div>
-                                <button class="btn-secondary full-width" id="generate-with-ai">
-                                    <span class="loading-spinner" id="ai-loading-spinner" style="display: none;"></span>
-                                    <span id="generate-text">Сгенерировать с AI</span>
-                                </button>
-                                <div class="ai-suggestion" id="ai-suggestion" style="display: none;">
-                                    <div class="suggestion-header">
-                                        <span>AI предложение</span>
-                                        <button class="text-btn small" id="use-suggestion">Использовать</button>
-                                    </div>
-                                    <div class="suggestion-content">
-                                        <h4 id="suggestion-name"></h4>
-                                        <p id="suggestion-description"></p>
-                                        <div class="suggestion-meta">
-                                            <span class="color-badge" id="suggestion-color" style="background-color: #4CAF50;"></span>
-                                            <span id="suggestion-frequency">Ежедневно</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn-secondary" id="cancel-habit">Отмена</button>
-                    <button class="btn-primary" id="save-habit">Сохранить привычку</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Stats Modal -->
-        <div class="modal-overlay" id="stats-modal">
-            <div class="modal large">
-                <div class="modal-header">
-                    <h3>Детальная статистика</h3>
-                    <button class="close-btn" id="close-stats">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="stats-container">
-                        <div class="calendar-view" id="calendar-view"></div>
-                        <div class="habits-stats" id="habits-stats"></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Empty State -->
-        <div class="empty-state" id="empty-state">
-            <div class="empty-icon">🌟</div>
-            <h3>Начните свой путь к лучшим привычкам</h3>
-            <p>Создайте свою первую привычку и начните отслеживать прогресс с помощью AI-коуча</p>
-            <button class="btn-primary large" id="create-first-habit">Создать первую привычку</button>
-        </div>
-    </div>
-
-    <script src="config.js"></script>
-    <script src="modules/storage.js"></script>
-    <script src="modules/habit-manager.js"></script>
-    <script src="modules/ai-coach.js"></script>
-    <script src="modules/ui-engine.js"></script>
-    <script src="app.js"></script>
+    // Инициализация приложения
+    document.addEventListener('DOMContentLoaded', () => {
+      const mount = document.getElementById('root');
+      const app = new App({ mount });
+      app.init();
+      // Экспорт в window для отладки
+      window.habitCraft = app;
+    });
+  </script>
 </body>
 </html>

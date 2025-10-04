@@ -1,58 +1,53 @@
-// Storage Manager
-class StorageManager {
-    constructor() {
-        this.userId = this.getUserId();
-        console.log('📦 StorageManager initialized for user:', this.userId);
-    }
+// modules/storage.js
+// Простой менеджер localStorage. Комментарии на русском.
 
-    getUserId() {
-        if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user?.id) {
-            return 'tg-' + Telegram.WebApp.initDataUnsafe.user.id.toString();
-        }
-        return 'local-user';
-    }
+export class StorageManager {
+  constructor(prefix = 'habitcraft') {
+    this.prefix = prefix;
+    this.userId = this._determineUserId();
+    console.log('📦 StorageManager for', this.userId);
+  }
 
-    getStorageKey(key) {
-        return `habitcraft-${this.userId}-${key}`;
-    }
+  _determineUserId() {
+    try {
+      if (typeof Telegram !== 'undefined' && Telegram.WebApp && Telegram.WebApp.initDataUnsafe?.user?.id) {
+        return 'tg-' + Telegram.WebApp.initDataUnsafe.user.id;
+      }
+    } catch (e) { /* ignore */ }
+    return 'local';
+  }
 
-    setItem(key, value) {
-        try {
-            const storageKey = this.getStorageKey(key);
-            localStorage.setItem(storageKey, JSON.stringify(value));
-            console.log('💾 Saved:', key, value);
-            return true;
-        } catch (error) {
-            console.error('❌ Storage set error:', error);
-            return false;
-        }
-    }
+  _key(key) {
+    return `${this.prefix}-${this.userId}-${key}`;
+  }
 
-    getItem(key) {
-        try {
-            const storageKey = this.getStorageKey(key);
-            const data = localStorage.getItem(storageKey);
-            const result = data ? JSON.parse(data) : null;
-            console.log('📂 Loaded:', key, result);
-            return result;
-        } catch (error) {
-            console.error('❌ Storage get error:', error);
-            return null;
-        }
+  setItem(key, value) {
+    try {
+      localStorage.setItem(this._key(key), JSON.stringify(value));
+      return true;
+    } catch (e) {
+      console.error('Storage set error', e);
+      return false;
     }
+  }
 
-    removeItem(key) {
-        try {
-            const storageKey = this.getStorageKey(key);
-            localStorage.removeItem(storageKey);
-            console.log('🗑️ Removed:', key);
-            return true;
-        } catch (error) {
-            console.error('❌ Storage remove error:', error);
-            return false;
-        }
+  getItem(key) {
+    try {
+      const raw = localStorage.getItem(this._key(key));
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) {
+      console.error('Storage get error', e);
+      return null;
     }
+  }
+
+  removeItem(key) {
+    try {
+      localStorage.removeItem(this._key(key));
+      return true;
+    } catch (e) {
+      console.error('Storage remove error', e);
+      return false;
+    }
+  }
 }
-
-window.StorageManager = StorageManager;
-console.log('✅ Storage module loaded');

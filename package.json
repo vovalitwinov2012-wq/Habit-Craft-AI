@@ -1,18 +1,13 @@
 {
   "name": "habit-craft",
   "version": "1.0.0",
-  "description": "Telegram Mini App for habit tracking",
+  "description": "Telegram Mini App for habit tracking (static, ESM)",
   "type": "module",
-  "main": "app.js",
-  "scripts": {
-    "dev": "node app.js",
-    "start": "node app.js"
-  },
   "engines": {
     "node": "22.x"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "uuid": "^9.0.0"
-  }
+  "scripts": {
+    "vercel-build": "echo \"Static site - no build step\""
+  },
+  "dependencies": {}
 }

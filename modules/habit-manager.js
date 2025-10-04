@@ -1,208 +1,137 @@
-// Habit Management System
-class HabitManager {
-    constructor() {
-        this.storage = new StorageManager();
-        this.habits = this.loadHabits();
-        console.log('📊 HabitManager initialized with', this.habits.length, 'habits');
+// modules/habit-manager.js
+// Операции с привычками: CRUD, отметки, статистика.
+
+import { v4 as uuidv4 } from 'https://jspm.dev/uuid'; // ESM CDN для uuid (в статическом окружении)
+
+export class HabitManager {
+  constructor(storage, storageKey = 'habits') {
+    this.storage = storage;
+    this.storageKey = storageKey;
+    this.habits = this._load();
+  }
+
+  _load() {
+    const data = this.storage.getItem(this.storageKey) || [];
+    // наполнение дефолтных свойств
+    data.forEach(h => {
+      if (!h.id) h.id = uuidv4();
+      if (!Array.isArray(h.completedDates)) h.completedDates = [];
+      if (!h.createdAt) h.createdAt = new Date().toISOString();
+      if (typeof h.isActive === 'undefined') h.isActive = true;
+      if (typeof h.color === 'undefined') h.color = '#4CAF50';
+      if (typeof h.frequency === 'undefined') h.frequency = 'daily';
+      if (typeof h.totalCompletions === 'undefined') h.totalCompletions = 0;
+      if (typeof h.streak === 'undefined') h.streak = 0;
+    });
+    return data;
+  }
+
+  _save() {
+    this.storage.setItem(this.storageKey, this.habits);
+  }
+
+  list() { return this.habits.slice(); }
+
+  create({ name, description = '', color = '#4CAF50', frequency = 'daily' }) {
+    const habit = {
+      id: uuidv4(),
+      name,
+      description,
+      color,
+      frequency,
+      createdAt: new Date().toISOString(),
+      completedDates: [],
+      totalCompletions: 0,
+      streak: 0,
+      isActive: true
+    };
+    this.habits.push(habit);
+    this._save();
+    return habit;
+  }
+
+  delete(id) {
+    const prev = this.habits.length;
+    this.habits = this.habits.filter(h => h.id !== id);
+    this._save();
+    return this.habits.length !== prev;
+  }
+
+  _dateKey(date = new Date()) {
+    const d = new Date(date);
+    return d.toISOString().slice(0,10); // YYYY-MM-DD
+  }
+
+  toggleCompletion(id, date = new Date()) {
+    const h = this.habits.find(x => x.id === id);
+    if (!h) return false;
+    const key = this._dateKey(date);
+    const idx = h.completedDates.indexOf(key);
+    if (idx >= 0) {
+      h.completedDates.splice(idx, 1);
+      h.totalCompletions = Math.max(0, h.totalCompletions - 1);
+    } else {
+      h.completedDates.push(key);
+      h.totalCompletions = (h.totalCompletions || 0) + 1;
     }
+    // обновляем стрик
+    h.streak = this._calcStreak(h);
+    this._save();
+    return idx === -1; // true если пометили как выполнено
+  }
 
-    loadHabits() {
-        const habits = this.storage.getItem(CONFIG.STORAGE_KEYS.HABITS) || [];
-        // Initialize missing properties for existing habits
-        habits.forEach(habit => {
-            if (!habit.completedDates) habit.completedDates = [];
-            if (!habit.streak) habit.streak = 0;
-            if (!habit.totalCompletions) habit.totalCompletions = 0;
-            if (!habit.isActive) habit.isActive = true;
-        });
-        return habits;
+  _calcStreak(habit) {
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() - i);
+      const key = this._dateKey(d);
+      if (habit.completedDates.includes(key)) streak++;
+      else break;
     }
+    return streak;
+  }
 
-    saveHabits() {
-        const success = this.storage.setItem(CONFIG.STORAGE_KEYS.HABITS, this.habits);
-        console.log('💾 Habits saved:', success);
-        return success;
-    }
+  isCompletedToday(id) {
+    const h = this.habits.find(x => x.id === id);
+    if (!h) return false;
+    return h.completedDates.includes(this._dateKey(new Date()));
+  }
 
-    canCreateHabit() {
-        const currentCount = this.habits.length;
-        const canCreate = currentCount < CONFIG.MAX_FREE_HABITS;
-        console.log('📝 Can create habit:', canCreate, `(${currentCount}/${CONFIG.MAX_FREE_HABITS})`);
-        return canCreate;
-    }
+  getTodayHabits() {
+    const day = new Date().getDay(); // 0..6
+    return this.habits.filter(h => {
+      if (!h.isActive) return false;
+      if (h.frequency === 'daily') return true;
+      if (h.frequency === 'weekdays') return day >= 1 && day <= 5;
+      if (h.frequency === 'weekly') return day === 0 || day === 6;
+      return true;
+    });
+  }
 
-    createHabit(habitData) {
-        if (!this.canCreateHabit()) {
-            throw new Error(`Лимит привычек достигнут. Максимум ${CONFIG.MAX_FREE_HABITS} привычек в бесплатной версии.`);
-        }
+  getHabitStats(id) {
+    const h = this.habits.find(x => x.id === id);
+    if (!h) return null;
+    const totalDays = Math.max(1, Math.ceil((new Date() - new Date(h.createdAt)) / (1000*60*60*24)));
+    const completionRate = Math.round((h.totalCompletions / totalDays) * 100);
+    return {
+      streak: h.streak || 0,
+      totalCompletions: h.totalCompletions || 0,
+      completionRate,
+      createdAt: h.createdAt
+    };
+  }
 
-        const habit = {
-            id: this.generateId(),
-            name: habitData.name,
-            description: habitData.description,
-            color: habitData.color || '#4CAF50',
-            frequency: habitData.frequency || 'daily',
-            createdAt: new Date().toISOString(),
-            completedDates: [],
-            streak: 0,
-            totalCompletions: 0,
-            isActive: true
-        };
-
-        this.habits.push(habit);
-        this.saveHabits();
-        console.log('✅ Habit created:', habit);
-        return habit;
-    }
-
-    deleteHabit(habitId) {
-        this.habits = this.habits.filter(h => h.id !== habitId);
-        this.saveHabits();
-        console.log('🗑️ Habit deleted:', habitId);
-        return true;
-    }
-
-    toggleHabitCompletion(habitId, date = new Date()) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) {
-            console.error('❌ Habit not found:', habitId);
-            return false;
-        }
-
-        const dateKey = this.getDateKey(date);
-        const completedIndex = habit.completedDates.indexOf(dateKey);
-
-        if (completedIndex > -1) {
-            // Remove completion
-            habit.completedDates.splice(completedIndex, 1);
-            habit.totalCompletions = Math.max(0, habit.totalCompletions - 1);
-            console.log('❌ Habit uncompleted:', habitId, dateKey);
-        } else {
-            // Add completion
-            habit.completedDates.push(dateKey);
-            habit.totalCompletions++;
-            console.log('✅ Habit completed:', habitId, dateKey);
-        }
-
-        // Update streak
-        this.updateStreak(habit);
-        this.saveHabits();
-
-        return completedIndex === -1;
-    }
-
-    updateStreak(habit) {
-        const today = new Date();
-        let currentStreak = 0;
-        
-        // Check backwards from today
-        for (let i = 0; i < 365; i++) {
-            const checkDate = new Date(today);
-            checkDate.setDate(today.getDate() - i);
-            const dateKey = this.getDateKey(checkDate);
-            
-            if (habit.completedDates.includes(dateKey)) {
-                currentStreak++;
-            } else {
-                break;
-            }
-        }
-        
-        habit.streak = currentStreak;
-        console.log('🔥 Streak updated:', habit.name, currentStreak);
-    }
-
-    isHabitCompletedToday(habitId) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) return false;
-
-        const todayKey = this.getDateKey(new Date());
-        const completed = habit.completedDates.includes(todayKey);
-        console.log('📅 Habit completed today:', habitId, completed);
-        return completed;
-    }
-
-    getTodayHabits() {
-        const today = new Date();
-        const dayOfWeek = today.getDay();
-        
-        const todayHabits = this.habits.filter(habit => {
-            if (!habit.isActive) return false;
-            
-            switch (habit.frequency) {
-                case 'daily':
-                    return true;
-                case 'weekdays':
-                    return dayOfWeek >= 1 && dayOfWeek <= 5;
-                case 'weekly':
-                    return dayOfWeek === 0 || dayOfWeek === 6;
-                default:
-                    return true;
-            }
-        });
-
-        console.log('📋 Today habits:', todayHabits.length);
-        return todayHabits;
-    }
-
-    getHabitStats(habitId) {
-        const habit = this.habits.find(h => h.id === habitId);
-        if (!habit) return null;
-
-        const totalDays = Math.ceil((new Date() - new Date(habit.createdAt)) / (1000 * 60 * 60 * 24));
-        const completionRate = totalDays > 0 ? Math.round((habit.totalCompletions / totalDays) * 100) : 0;
-
-        const stats = {
-            streak: habit.streak,
-            totalCompletions: habit.totalCompletions,
-            completionRate,
-            totalDays,
-            lastCompletion: habit.completedDates[habit.completedDates.length - 1] || null
-        };
-
-        console.log('📈 Habit stats:', habitId, stats);
-        return stats;
-    }
-
-    getOverallStats() {
-        const totalHabits = this.habits.length;
-        const activeHabits = this.habits.filter(h => h.isActive).length;
-        
-        let totalCompletions = 0;
-        let totalPossibleCompletions = 0;
-        let longestStreak = 0;
-
-        this.habits.forEach(habit => {
-            totalCompletions += habit.totalCompletions;
-            const habitDays = Math.ceil((new Date() - new Date(habit.createdAt)) / (1000 * 60 * 60 * 24));
-            totalPossibleCompletions += habitDays;
-            longestStreak = Math.max(longestStreak, habit.streak);
-        });
-
-        const overallCompletionRate = totalPossibleCompletions > 0 
-            ? Math.round((totalCompletions / totalPossibleCompletions) * 100)
-            : 0;
-
-        const stats = {
-            totalHabits,
-            activeHabits,
-            overallCompletionRate,
-            longestStreak,
-            totalCompletions
-        };
-
-        console.log('📊 Overall stats:', stats);
-        return stats;
-    }
-
-    getDateKey(date) {
-        return date.toISOString().split('T')[0];
-    }
-
-    generateId() {
-        return Date.now().toString(36) + Math.random().toString(36).substr(2);
-    }
+  getOverallStats() {
+    const totalHabits = this.habits.length;
+    let totalCompletions = 0, totalDays = 0, longestStreak = 0;
+    this.habits.forEach(h => {
+      totalCompletions += h.totalCompletions || 0;
+      totalDays += Math.max(1, Math.ceil((new Date() - new Date(h.createdAt)) / (1000*60*60*24)));
+      longestStreak = Math.max(longestStreak, h.streak || 0);
+    });
+    const overallCompletionRate = totalDays ? Math.round((totalCompletions / totalDays) * 100) : 0;
+    return { totalHabits, overallCompletionRate, longestStreak, totalCompletions };
+  }
 }
-
-window.HabitManager = HabitManager;
-console.log('✅ HabitManager module loaded');
