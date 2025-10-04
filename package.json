@@ -1,11 +1,18 @@
 {
-  "name": "habitcraft-ai",
+  "name": "habit-craft",
   "version": "1.0.0",
-  "private": true,
-  "engines": {
-    "node": "20.x"
-  },
+  "description": "Telegram Mini App for habit tracking",
+  "main": "app.js",
   "scripts": {
-    "start": "echo \"Static site - no build required\""
+    "dev": "node app.js",
+    "start": "node app.js"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "node-fetch": "^2.6.7",
+    "uuid": "^9.0.0"
   }
 }

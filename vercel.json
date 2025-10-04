@@ -1,22 +1,15 @@
 {
   "version": 2,
-  "functions": {
-    "api/ai.js": {
-      "runtime": "nodejs20.x"
+  "builds": [
+    {
+      "src": "app.js",
+      "use": "@vercel/node"
     }
-  },
+  ],
   "routes": [
     {
-      "src": "/api/ai",
-      "dest": "/api/ai.js"
-    },
-    {
-      "src": "/(.*\\.(?:js|css|map|png|jpg|jpeg|svg|ico))",
-      "dest": "/$1"
-    },
-    {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/app.js"
     }
   ]
 }
