@@ -1,9 +1,10 @@
-// Advanced UI Engine with Smooth Animations
+// UI Engine with Complete Functionality
 class UIEngine {
     constructor(habitManager, aiCoach) {
         this.habitManager = habitManager;
         this.aiCoach = aiCoach;
         this.currentTheme = this.loadTheme();
+        this.currentAISuggestion = null;
         this.init();
     }
 
@@ -31,8 +32,6 @@ class UIEngine {
 
     applyTheme() {
         document.documentElement.setAttribute('data-theme', this.currentTheme);
-        
-        // Update theme icon
         const themeIcon = document.querySelector('.theme-icon');
         if (themeIcon) {
             themeIcon.textContent = this.currentTheme === 'light' ? '🌙' : '☀️';
@@ -41,35 +40,44 @@ class UIEngine {
 
     setupEventListeners() {
         // Theme toggle
-        document.getElementById('theme-toggle')?.addEventListener('click', () => this.toggleTheme());
+        document.getElementById('theme-toggle').addEventListener('click', () => this.toggleTheme());
         
-        // Add habit button
-        document.getElementById('add-habit-btn')?.addEventListener('click', () => this.openAddHabitModal());
-        document.getElementById('create-first-habit')?.addEventListener('click', () => this.openAddHabitModal());
+        // Add habit buttons
+        document.getElementById('add-habit-btn').addEventListener('click', () => this.openAddHabitModal());
+        document.getElementById('create-first-habit').addEventListener('click', () => this.openAddHabitModal());
         
         // Modal controls
-        document.getElementById('close-modal')?.addEventListener('click', () => this.closeModals());
-        document.getElementById('cancel-habit')?.addEventListener('click', () => this.closeModals());
-        document.getElementById('close-stats')?.addEventListener('click', () => this.closeModals());
-        
-        // Save habit
-        document.getElementById('save-habit')?.addEventListener('click', () => this.saveHabit());
+        document.getElementById('close-modal').addEventListener('click', () => this.closeModals());
+        document.getElementById('cancel-habit').addEventListener('click', () => this.closeModals());
+        document.getElementById('close-stats').addEventListener('click', () => this.closeModals());
+        document.getElementById('save-habit').addEventListener('click', () => this.saveHabit());
         
         // AI generation
-        document.getElementById('generate-with-ai')?.addEventListener('click', () => this.generateHabitWithAI());
-        document.getElementById('use-suggestion')?.addEventListener('click', () => this.useAISuggestion());
+        document.getElementById('generate-with-ai').addEventListener('click', () => this.generateHabitWithAI());
+        document.getElementById('use-suggestion').addEventListener('click', () => this.useAISuggestion());
         
         // AI chat
-        document.getElementById('ai-send-btn')?.addEventListener('click', () => this.sendAIMessage());
-        document.getElementById('ai-input')?.addEventListener('keypress', (e) => {
+        document.getElementById('ai-send-btn').addEventListener('click', () => this.sendAIMessage());
+        document.getElementById('ai-input').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.sendAIMessage();
+        });
+        
+        // Stats view
+        document.getElementById('view-all-stats').addEventListener('click', () => this.openStatsModal());
+        
+        // Modal overlay close
+        document.getElementById('add-habit-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'add-habit-modal') this.closeModals();
+        });
+        document.getElementById('stats-modal').addEventListener('click', (e) => {
+            if (e.target.id === 'stats-modal') this.closeModals();
         });
         
         // Tabs
         this.setupTabs();
         
-        // Stats view
-        document.getElementById('view-all-stats')?.addEventListener('click', () => this.openStatsModal());
+        // Color picker and frequency selector
+        this.setupFormControls();
     }
 
     setupTabs() {
@@ -82,13 +90,33 @@ class UIEngine {
         });
     }
 
+    setupFormControls() {
+        // Color picker
+        document.querySelectorAll('.color-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                document.querySelectorAll('.color-option').forEach(opt => {
+                    opt.classList.remove('selected');
+                });
+                e.target.classList.add('selected');
+            });
+        });
+        
+        // Frequency selector
+        document.querySelectorAll('.frequency-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.frequency-btn').forEach(b => {
+                    b.classList.remove('active');
+                });
+                e.target.classList.add('active');
+            });
+        });
+    }
+
     switchTab(tabName) {
-        // Update tab buttons
         document.querySelectorAll('.tab').forEach(tab => {
             tab.classList.toggle('active', tab.getAttribute('data-tab') === tabName);
         });
         
-        // Update tab content
         document.querySelectorAll('.tab-content').forEach(content => {
             content.classList.toggle('active', content.id === `${tabName}-tab`);
         });
@@ -111,17 +139,11 @@ class UIEngine {
             day: 'numeric' 
         };
         const dateString = today.toLocaleDateString('ru-RU', options);
-        
-        const dateElement = document.getElementById('today-date');
-        if (dateElement) {
-            dateElement.textContent = dateString;
-        }
+        document.getElementById('today-date').textContent = dateString;
     }
 
     renderHabits() {
         const container = document.getElementById('today-habits');
-        if (!container) return;
-
         const habits = this.habitManager.getTodayHabits();
         
         container.innerHTML = '';
@@ -201,7 +223,6 @@ class UIEngine {
     }
 
     showCelebration() {
-        // Add a subtle celebration effect
         const celebration = document.createElement('div');
         celebration.style.cssText = `
             position: fixed;
@@ -231,7 +252,6 @@ class UIEngine {
 
     renderStats() {
         const stats = this.habitManager.getOverallStats();
-        
         document.getElementById('total-habits').textContent = stats.totalHabits;
         document.getElementById('completion-rate').textContent = stats.overallCompletionRate + '%';
         document.getElementById('current-streak').textContent = stats.longestStreak;
@@ -250,23 +270,18 @@ class UIEngine {
         ).length;
 
         const percentage = Math.round((completed / habits.length) * 100);
-        
         document.getElementById('daily-progress-fill').style.width = percentage + '%';
         document.getElementById('daily-progress-text').textContent = percentage + '% выполнено';
     }
 
     renderAIStatus() {
         const usage = this.aiCoach.getUsageStats();
-        const creditsElement = document.getElementById('ai-credits');
-        
-        if (creditsElement) {
-            creditsElement.textContent = `${usage.remainingToday} запросов осталось`;
-        }
+        document.getElementById('ai-credits').textContent = `${usage.remainingToday} запросов осталось`;
     }
 
     checkEmptyState() {
         const emptyState = document.getElementById('empty-state');
-        const mainContent = document.querySelector('.main-content');
+        const mainContent = document.getElementById('main-content');
         
         if (this.habitManager.habits.length === 0) {
             emptyState.classList.add('active');
@@ -280,20 +295,17 @@ class UIEngine {
     openAddHabitModal() {
         document.getElementById('add-habit-modal').classList.add('active');
         this.switchTab('manual');
-        
-        // Reset form
         document.getElementById('habit-name').value = '';
         document.getElementById('habit-description').value = '';
         document.getElementById('ai-habit-description').value = '';
         document.getElementById('ai-suggestion').style.display = 'none';
         
-        // Reset color picker
+        // Reset form controls
         document.querySelectorAll('.color-option').forEach(opt => {
             opt.classList.remove('selected');
         });
         document.querySelector('.color-option').classList.add('selected');
         
-        // Reset frequency
         document.querySelectorAll('.frequency-btn').forEach(btn => {
             btn.classList.remove('active');
         });
@@ -317,7 +329,6 @@ class UIEngine {
         const spinner = document.getElementById('ai-loading-spinner');
         const generateText = document.getElementById('generate-text');
 
-        // Show loading state
         generateBtn.disabled = true;
         spinner.style.display = 'inline-block';
         generateText.textContent = 'Генерация...';
@@ -332,7 +343,6 @@ class UIEngine {
                 this.showNotification('Ошибка генерации. Попробуйте позже.');
             }
         } finally {
-            // Reset button state
             generateBtn.disabled = false;
             spinner.style.display = 'none';
             generateText.textContent = 'Сгенерировать с AI';
@@ -350,20 +360,16 @@ class UIEngine {
         document.getElementById('suggestion-frequency').textContent = this.getFrequencyText(suggestion.frequency);
         document.getElementById('ai-suggestion').style.display = 'block';
         
-        // Store suggestion for later use
         this.currentAISuggestion = suggestion;
     }
 
     useAISuggestion() {
         if (!this.currentAISuggestion) return;
 
-        // Switch to manual tab and populate fields
         this.switchTab('manual');
-        
         document.getElementById('habit-name').value = this.currentAISuggestion.name;
         document.getElementById('habit-description').value = this.currentAISuggestion.description;
         
-        // Set color
         document.querySelectorAll('.color-option').forEach(opt => {
             opt.classList.remove('selected');
             if (opt.getAttribute('data-color') === this.currentAISuggestion.color) {
@@ -371,7 +377,6 @@ class UIEngine {
             }
         });
         
-        // Set frequency
         document.querySelectorAll('.frequency-btn').forEach(btn => {
             btn.classList.remove('active');
             if (btn.getAttribute('data-frequency') === this.currentAISuggestion.frequency) {
@@ -418,7 +423,6 @@ class UIEngine {
         const responseDiv = document.getElementById('ai-response');
         const sendBtn = document.getElementById('ai-send-btn');
 
-        // Clear placeholder
         responseDiv.innerHTML = '<div class="loading-spinner" style="margin: 20px auto;"></div>';
         input.disabled = true;
         sendBtn.disabled = true;
@@ -463,10 +467,7 @@ class UIEngine {
         const calendarView = document.getElementById('calendar-view');
         const habitsStats = document.getElementById('habits-stats');
         
-        // Render calendar
         calendarView.innerHTML = this.renderCalendar();
-        
-        // Render habits stats
         habitsStats.innerHTML = this.habitManager.habits.map(habit => {
             const habitStats = this.habitManager.getHabitStats(habit.id);
             return `
@@ -482,9 +483,6 @@ class UIEngine {
 
     renderCalendar() {
         const today = new Date();
-        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
-        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
-        
         let calendarHTML = `
             <div style="font-weight: 600; margin-bottom: 16px;">
                 ${today.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })}
@@ -492,13 +490,14 @@ class UIEngine {
             <div class="calendar-grid">
         `;
         
-        // Add day headers
         const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
         dayNames.forEach(day => {
             calendarHTML += `<div style="text-align: center; font-size: 12px; color: var(--text-secondary); padding: 4px;">${day}</div>`;
         });
         
-        // Add calendar days
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        
         for (let i = 0; i < firstDay.getDay(); i++) {
             calendarHTML += '<div></div>';
         }
@@ -508,7 +507,6 @@ class UIEngine {
             const dateKey = this.habitManager.getDateKey(date);
             const isToday = date.toDateString() === today.toDateString();
             
-            // Check if any habit was completed this day
             const hasCompletion = this.habitManager.habits.some(habit => 
                 habit.completedDates.includes(dateKey)
             );
@@ -525,7 +523,6 @@ class UIEngine {
     }
 
     showNotification(message) {
-        // Create notification element
         const notification = document.createElement('div');
         notification.style.cssText = `
             position: fixed;
@@ -550,7 +547,6 @@ class UIEngine {
         }, 3000);
     }
 
-    // Utility methods
     escapeHtml(text) {
         const div = document.createElement('div');
         div.textContent = text;
