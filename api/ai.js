@@ -1,6 +1,6 @@
-// api/ai.js — Vercel serverless function proxy for OpenRouter (or any compatible provider)
-// Использует process.env.OPENROUTER_API_KEY (добавьте в Vercel Project Settings)
-// Node 18 имеет глобальный fetch — мы его используем.
+// api/ai.js (Vercel serverless function, Node 18 runtime)
+// Прокси к OpenRouter (или иному совместимому провайдеру).
+// Требует переменной окружения OPENROUTER_API_KEY в настройках Vercel.
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
@@ -17,8 +17,9 @@ module.exports = async (req, res) => {
   }
 
   try {
+    // Получаем тело запроса (req.body может быть пустым если Vercel не распарсил)
     const body = (req.body && Object.keys(req.body).length) ? req.body : JSON.parse(await getRawBody(req));
-    const { type = 'advice', message = '', preferences = {}, context = {} } = body;
+    const { type = 'advice', message = '', preferences = {} } = body;
 
     let messages;
     if (type === 'habit_generation') {
@@ -34,7 +35,7 @@ module.exports = async (req, res) => {
   "motivationTips": ["Совет 1","Совет 2"]
 }`
         },
-        { role: 'user', content: `Создай привычку по описанию: "${String(message)}"` }
+        { role: 'user', content: `Создай привычку: "${String(message)}"` }
       ];
     } else {
       messages = [
@@ -84,7 +85,7 @@ module.exports = async (req, res) => {
           return;
         }
       } catch (err) {
-        // fallthrough to returning raw content
+        // fallthrough
       }
       res.status(200).json({ success: true, habitRaw: content });
       return;
@@ -98,7 +99,6 @@ module.exports = async (req, res) => {
   }
 };
 
-// Вспомогательная функция для чтения сырого тела запроса (если нужно)
 function getRawBody(req) {
   return new Promise((resolve, reject) => {
     let data = '';
