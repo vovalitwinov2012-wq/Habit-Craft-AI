@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #ffffff;
+  --card: #ffffff;
+  --muted: #6b7280;
+}
+
+body {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  color: #0f172a;
+}

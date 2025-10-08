@@ -1,5 +1,16 @@
--- 001_create_tables.sql
 create extension if not exists "pgcrypto";
+
+create table if not exists users (
+  id text primary key,
+  username text,
+  first_name text,
+  last_name text,
+  metadata jsonb default '{}'::jsonb,
+  is_premium boolean default false,
+  role text default 'user',
+  consent_analytics boolean default false,
+  created_at timestamptz default now()
+);
 
 create table if not exists habits (
   id text primary key,
@@ -13,6 +24,7 @@ create table if not exists habits (
   category text,
   goal integer,
   reminder text,
+  visibility text default 'private',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -29,11 +41,24 @@ create table if not exists progress (
   constraint unique_user_habit_date unique (user_id, habit_id, date)
 );
 
-create table if not exists users (
-  id text primary key,
-  username text,
-  first_name text,
-  last_name text,
+create table if not exists analytics_events (
+  id text primary key default gen_random_uuid(),
+  event_type text not null,
+  owner text null,
   metadata jsonb default '{}'::jsonb,
   created_at timestamptz default now()
 );
+
+create table if not exists analytics_counters (
+  id text primary key default gen_random_uuid(),
+  key text not null,
+  value bigint default 0,
+  updated_at timestamptz default now()
+);
+
+create or replace function increment_counter(key text, amount integer)
+returns void language sql as $$
+  insert into analytics_counters (key, value, updated_at)
+  values (key, amount, now())
+  on conflict (key) do update set value = analytics_counters.value + amount, updated_at = now();
+$$;

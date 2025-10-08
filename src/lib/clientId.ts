@@ -1,5 +1,7 @@
+const KEY = 'HABITCRAFT_CLIENT_ID';
+const SYNC_KEY = 'HABITCRAFT_SYNC_OWNER';
+
 export function getClientId(): string {
-  const KEY = 'HABITCRAFT_CLIENT_ID';
   try {
     let id = localStorage.getItem(KEY);
     if (!id) {
@@ -8,7 +10,14 @@ export function getClientId(): string {
     }
     return id;
   } catch (e) {
-    // fallback to timestamp based id
     return `fallback-${Date.now()}`;
   }
+}
+
+export function setSyncOwner(ownerId: string) {
+  try { localStorage.setItem(SYNC_KEY, ownerId); } catch {}
+}
+
+export function getSyncOwner(): string | null {
+  try { return localStorage.getItem(SYNC_KEY); } catch { return null; }
 }
