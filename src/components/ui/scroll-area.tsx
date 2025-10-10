@@ -1,1 +1,0 @@
-export const ScrollArea=(p:any)=><div {...p}>{p.children}</div>

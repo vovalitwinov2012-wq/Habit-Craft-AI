@@ -1,1 +1,0 @@
-export const Sheet=(p:any)=>p.children; export const SheetContent=(p:any)=><div>{p.children}</div>; export const SheetHeader=(p:any)=><div>{p.children}</div>; export const SheetTitle=(p:any)=><h3>{p.children}</h3>; export const SheetTrigger=(p:any)=><div>{p.children}</div>;

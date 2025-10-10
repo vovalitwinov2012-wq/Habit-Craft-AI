@@ -29,18 +29,6 @@ create table if not exists habits (
   updated_at timestamptz default now()
 );
 
-create table if not exists progress (
-  id text primary key,
-  user_id text not null,
-  habit_id text not null references habits(id) on delete cascade,
-  date date not null,
-  data jsonb default '{}'::jsonb,
-  streak integer default 0,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  constraint unique_user_habit_date unique (user_id, habit_id, date)
-);
-
 create table if not exists analytics_events (
   id text primary key default gen_random_uuid(),
   event_type text not null,
@@ -55,10 +43,3 @@ create table if not exists analytics_counters (
   value bigint default 0,
   updated_at timestamptz default now()
 );
-
-create or replace function increment_counter(key text, amount integer)
-returns void language sql as $$
-  insert into analytics_counters (key, value, updated_at)
-  values (key, amount, now())
-  on conflict (key) do update set value = analytics_counters.value + amount, updated_at = now();
-$$;

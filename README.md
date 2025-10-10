@@ -1,26 +1,18 @@
-# HabitCraft AI - Ready project (minimal premium)
+HabitCraft AI - Complete package
 
-This project is a ready-to-deploy Vite + React + TypeScript project with:
+Environment variables (Vercel):
+OPENROUTER_API_KEY (server)
+SUPABASE_URL (server)
+SUPABASE_SERVICE_ROLE_KEY (server)
+VITE_SUPABASE_URL (client)
+VITE_SUPABASE_PUBLISHABLE_KEY (client)
+ADMIN_SECRET (server)
 
-- Supabase integration (frontend client + server endpoints)
-- AI Coach (OpenRouter deepseek model) via serverless api/ai-chat.ts
-- Admin analytics endpoints (protected by ADMIN_SECRET)
-- Premium mode, Sync Code, consent-based analytics
-- Bilingual UI (English and Russian) with switcher on main page
+To run locally:
+1. npm install
+2. npm run dev
 
-**Important:** Set environment variables in Vercel (or .env for local dev):
-- OPENROUTER_API_KEY (server-side)
-- SUPABASE_URL
-- SUPABASE_SERVICE_ROLE_KEY (server-side)
-- VITE_SUPABASE_URL
-- VITE_SUPABASE_PUBLISHABLE_KEY
-- ADMIN_SECRET
+To build:
+npm run build
 
-Run locally:
-```
-npm install
-npm run dev
-```
-
-Apply Supabase migration using SQL editor or CLI:
-`supabase/migrations/001_create_tables.sql`.
+Deploy to Vercel: Upload ZIP or push repo and set env vars.
