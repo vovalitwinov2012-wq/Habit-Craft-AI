@@ -1,11 +1,39 @@
-import React from 'react'
-import { useLanguage } from '@/i18n/i18n'
-export default function LanguageSwitcher(){
-  const { lang, setLanguage } = useLanguage();
+import { Languages } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useLanguage } from "@/contexts/LanguageContext";
+
+const LanguageSwitcher = () => {
+  const { language, setLanguage } = useLanguage();
+
   return (
-    <div className='flex gap-2'>
-      <button onClick={()=>setLanguage('en')} className={'px-2 py-1 rounded '+(lang==='en'?'bg-gray-900 text-white':'bg-white border')}>EN</button>
-      <button onClick={()=>setLanguage('ru')} className={'px-2 py-1 rounded '+(lang==='ru'?'bg-gray-900 text-white':'bg-white border')}>RU</button>
-    </div>
-  )
-}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="outline" size="icon" className="h-9 w-9">
+          <Languages className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem
+          onClick={() => setLanguage('ru')}
+          className={language === 'ru' ? 'bg-accent' : ''}
+        >
+          🇷🇺 Русский
+        </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage('en')}
+          className={language === 'en' ? 'bg-accent' : ''}
+        >
+          🇬🇧 English
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+export default LanguageSwitcher;

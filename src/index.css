@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
+All colors MUST be HSL.
+*/
+
+@layer base {
+  :root {
+    --background: 240 10% 98%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    --primary: 240 10% 10%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 5% 96%;
+    --secondary-foreground: 240 10% 10%;
+
+    --muted: 240 5% 96%;
+    --muted-foreground: 240 5% 45%;
+
+    --accent: 240 5% 96%;
+    --accent-foreground: 240 10% 10%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 6% 90%;
+    --input: 240 6% 90%;
+    --ring: 240 10% 10%;
+
+    --radius: 1rem;
+
+    /* Habit app colors */
+    --habit-coral: 5 100% 70%;
+    --habit-yellow: 48 100% 62%;
+    --habit-purple: 250 65% 65%;
+    --habit-blue: 190 100% 50%;
+    --habit-green: 145 50% 60%;
+    --habit-pink: 340 85% 70%;
+    
+    /* Gradients */
+    --gradient-warm: linear-gradient(135deg, hsl(5 100% 70%), hsl(48 100% 62%));
+    --gradient-cool: linear-gradient(135deg, hsl(250 65% 65%), hsl(190 100% 50%));
+    --gradient-success: linear-gradient(135deg, hsl(145 50% 60%), hsl(190 100% 50%));
+    
+    /* Shadows */
+    --shadow-soft: 0 2px 20px -4px hsl(240 10% 10% / 0.08);
+    --shadow-medium: 0 4px 30px -6px hsl(240 10% 10% / 0.12);
+    
+    /* Transitions */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .dark {
+    --background: 240 10% 10%;
+    --foreground: 240 5% 96%;
+
+    --card: 240 8% 12%;
+    --card-foreground: 240 5% 96%;
+
+    --popover: 240 8% 12%;
+    --popover-foreground: 240 5% 96%;
+
+    --primary: 240 5% 96%;
+    --primary-foreground: 240 10% 10%;
+
+    --secondary: 240 5% 16%;
+    --secondary-foreground: 240 5% 96%;
+
+    --muted: 240 5% 16%;
+    --muted-foreground: 240 5% 65%;
+
+    --accent: 240 5% 16%;
+    --accent-foreground: 240 5% 96%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 240 5% 96%;
+    
+    --shadow-soft: 0 2px 20px -4px hsl(0 0% 0% / 0.3);
+    --shadow-medium: 0 4px 30px -6px hsl(0 0% 0% / 0.4);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
