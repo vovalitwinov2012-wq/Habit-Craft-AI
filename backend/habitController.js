@@ -38,13 +38,49 @@ async function handleMessage(update) {
   if (normalized.startsWith('/list')) {
     const list = habits[chatId];
     if (!list.length) {
-      return { chatId, replyText: 'No habits yet. Add one with /new <name>' };
+      return { chatId, replyText: '📝 No habits yet. Add one with /new <name>' };
     }
-    const lines = list.map((h, i) => `${i + 1}. ${h.name}`);
-    return { chatId, replyText: lines.join('\n') };
+    const lines = list.map((h, i) => `${h.done ? '✅' : '⏳'} ${i + 1}. ${h.name}`);
+    return { chatId, replyText: `📋 Your habits:\n${lines.join('\n')}` };
   }
 
-  return { chatId, replyText: 'Commands: /new <name>, /list, /ai <question>' };
+  if (normalized.startsWith('/done')) {
+    const habitIndex = parseInt(normalized.replace('/done', '').trim()) - 1;
+    const list = habits[chatId];
+    if (isNaN(habitIndex) || habitIndex < 0 || habitIndex >= list.length) {
+      return { chatId, replyText: 'Usage: /done <number> (use /list to see numbers)' };
+    }
+    list[habitIndex].done = !list[habitIndex].done;
+    const status = list[habitIndex].done ? 'completed' : 'pending';
+    return { chatId, replyText: `✅ Habit "${list[habitIndex].name}" marked as ${status}` };
+  }
+
+  if (normalized.startsWith('/delete')) {
+    const habitIndex = parseInt(normalized.replace('/delete', '').trim()) - 1;
+    const list = habits[chatId];
+    if (isNaN(habitIndex) || habitIndex < 0 || habitIndex >= list.length) {
+      return { chatId, replyText: 'Usage: /delete <number> (use /list to see numbers)' };
+    }
+    const deletedHabit = list.splice(habitIndex, 1)[0];
+    return { chatId, replyText: `🗑️ Deleted habit: ${deletedHabit.name}` };
+  }
+
+  if (normalized.startsWith('/help') || normalized.startsWith('/start')) {
+    return { 
+      chatId, 
+      replyText: `🤖 <b>Habit Craft AI Bot</b>\n\n` +
+                `Commands:\n` +
+                `• /new <name> - Add new habit\n` +
+                `• /list - Show all habits\n` +
+                `• /done <number> - Mark habit as done/pending\n` +
+                `• /delete <number> - Delete habit\n` +
+                `• /ai <question> - Ask AI advisor\n` +
+                `• /help - Show this help\n\n` +
+                `Start building better habits today! 💪`
+    };
+  }
+
+  return { chatId, replyText: 'Unknown command. Use /help to see available commands.' };
 }
 
 module.exports = { handleMessage, habits };
