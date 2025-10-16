@@ -1,5 +1,6 @@
 {
-  "welcome": "Hello! Create a new habit",
-  "newHabit": "New Habit",
-  "aiAssistant": "AI Assistant"
+  "change_language": "Change Language",
+  "habit_craft_ai": "Habit Craft AI",
+  "add_habit": "Add Habit",
+  "ask_ai": "Ask AI"
 }
