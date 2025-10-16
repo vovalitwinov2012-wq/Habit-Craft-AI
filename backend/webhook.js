@@ -1,5 +1,6 @@
 const { handleMessage } = require('./habitController');
 const { sendAIMessage } = require('./aiService');
+const fetch = require('node-fetch');
 
 async function readRequestBody(req) {
   if (req.body) return req.body;
@@ -48,14 +49,37 @@ module.exports = async function handler(req, res) {
 
     if (method === 'POST' && (url === '/api/webhook' || url === '/webhook')) {
       const body = await readRequestBody(req);
+      console.log('Received webhook:', JSON.stringify(body, null, 2));
+      
       const result = await handleMessage(body);
-      // Telegram-compatible reply format for webhooks
+      console.log('Processed message:', JSON.stringify(result, null, 2));
+      
+      // Telegram webhook response
       res.statusCode = 200;
       res.setHeader('Content-Type', 'application/json');
-      // If using webhook reply, Telegram accepts either message text in body or empty
-      // Here we return a JSON with text so bots can use webhook response immediately.
-      const replyText = result && result.replyText ? String(result.replyText) : 'OK';
-      res.end(JSON.stringify({ method: 'sendMessage', chat_id: result?.chatId, text: replyText }));
+      
+      if (result && result.chatId && result.replyText) {
+        // Send message back to Telegram
+        const telegramToken = process.env.TELEGRAM_BOT_TOKEN;
+        if (telegramToken) {
+          try {
+            const telegramResponse = await fetch(`https://api.telegram.org/bot${telegramToken}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: result.chatId,
+                text: result.replyText,
+                parse_mode: 'HTML'
+              })
+            });
+            console.log('Telegram response status:', telegramResponse.status);
+          } catch (error) {
+            console.error('Failed to send message to Telegram:', error);
+          }
+        }
+      }
+      
+      res.end(JSON.stringify({ ok: true }));
       return;
     }
 
