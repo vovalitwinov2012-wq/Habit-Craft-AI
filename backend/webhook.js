@@ -48,9 +48,14 @@ module.exports = async function handler(req, res) {
 
     if (method === 'POST' && (url === '/api/webhook' || url === '/webhook')) {
       const body = await readRequestBody(req);
-      await handleMessage(body);
+      const result = await handleMessage(body);
+      // Telegram-compatible reply format for webhooks
       res.statusCode = 200;
-      res.end('OK');
+      res.setHeader('Content-Type', 'application/json');
+      // If using webhook reply, Telegram accepts either message text in body or empty
+      // Here we return a JSON with text so bots can use webhook response immediately.
+      const replyText = result && result.replyText ? String(result.replyText) : 'OK';
+      res.end(JSON.stringify({ method: 'sendMessage', chat_id: result?.chatId, text: replyText }));
       return;
     }
 
