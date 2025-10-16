@@ -1,73 +1,78 @@
-# Welcome to your Lovable project
+# Habit-Craft-AI
 
-## Project info
+**Repository & Bot name:** Habit-Craft-AI
 
-**URL**: https://lovable.dev/projects/0c3dfd51-2b1b-4071-a82b-161134a6525f
+This archive contains a minimal but complete scaffold for the Habit-Craft-AI Telegram Web App + a small proxy backend for AI (OpenRouter) and for webhook handling.
+**Important:** No API keys are included. Fill `.env` in `/backend` with your secrets.
 
-## How can I edit this code?
+## Structure
 
-There are several ways of editing your application.
+- `/backend` — Express-based server (webhook + AI proxy).
+- `/frontend` — Vite + React + Tailwind Telegram Web App (SPA).
+- `.gitignore`, `.env.example` — templates.
 
-**Use Lovable**
+## Quick local run (development)
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0c3dfd51-2b1b-4071-a82b-161134a6525f) and start prompting.
+### Prerequisites
+- Node.js 18+ and npm
+- ngrok (optional) for exposing local webhook to Telegram for testing
 
-Changes made via Lovable will be committed automatically to this repo.
+### Steps
 
-**Use your preferred IDE**
+1. Install backend deps:
+```bash
+cd backend
+npm install
+```
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+2. Install frontend deps:
+```bash
+cd ../frontend
+npm install
+```
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+3. Create backend `.env` based on `.env.example`:
+```
+TELEGRAM_BOT_TOKEN=
+OPENROUTER_API_KEY=
+WEBHOOK_URL=   # your public reachable webhook, e.g. from ngrok or Vercel URL
+```
 
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+4. Run backend (development):
+```bash
+cd ../backend
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+5. Run frontend (development):
+```bash
+cd ../frontend
+npm run dev
+```
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+6. Expose backend to internet (for Telegram webhook) using ngrok (optional):
+```bash
+npx ngrok http 3000
+# copy NGROK URL and set WEBHOOK_URL accordingly, then set webhook:
+curl -F "url=https://<ngrok-id>.ngrok.io/webhook" \
+  https://api.telegram.org/bot<TELEGRAM_BOT_TOKEN>/setWebhook
+```
 
-**Use GitHub Codespaces**
+## Deployment
+- Deploy the frontend + backend to Vercel (recommended). Set environment variables there:
+  - `OPENROUTER_API_KEY`
+  - `TELEGRAM_BOT_TOKEN`
+  - `WEBHOOK_URL` (your deployed URL + `/webhook`)
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Security
+- Do **not** commit `.env` or API keys.
+- The backend proxies AI requests so the client never contains the AI key.
+- For storage syncing you can enable GitHub Gists or other storage; that is not included by default.
 
-## What technologies are used for this project?
+## Notes
+This scaffold is intended as a starting point. It includes core files and a working flow for:
+- Telegram init / basic Web App rendering
+- Proxying OpenRouter AI model calls via backend
+- Minimal habit UI and AI assistant widget
 
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/0c3dfd51-2b1b-4071-a82b-161134a6525f) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Customize further per your needs.
