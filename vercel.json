@@ -8,5 +8,7 @@
     { "src": "/api/(.*)", "dest": "/backend/webhook.js" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
-  ]
+  ],
+  "installCommand": "npm --prefix backend ci || npm --prefix backend i && npm --prefix frontend ci || npm --prefix frontend i",
+  "buildCommand": "npm --prefix frontend run build"
 }
